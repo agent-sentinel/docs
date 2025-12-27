@@ -1,33 +1,39 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "Introduction"
+description: "OpenAPI reference for the Agent Sentinel Platform (FastAPI)."
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+This section is generated from the platform’s OpenAPI spec at `docs/api-reference/openapi.json`.
 
-## Welcome
+## Base URL
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+Local dev (default): `http://localhost:8000`
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+All endpoints are under:
+
+```text
+/api/v1
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+Most endpoints require an `Authorization` header:
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+```bash
+Authorization: Bearer <token>
 ```
+
+For ingestion, the platform accepts either:
+
+- **JWT access token** (obtained via `POST /api/v1/login/access-token`)
+- **API key** (created via `POST /api/v1/api-keys/`)
+
+<Tip>
+  For agents, prefer **API keys** over user JWTs.
+</Tip>
+
+## FastAPI Swagger UI
+
+When self-hosting, you can also browse the live Swagger UI at:
+
+`http://localhost:8000/docs`

@@ -1,80 +1,131 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Instrument your agent in minutes, with local-first logs and optional platform sync."
 ---
 
-## Get started in three steps
+## What you’ll build
 
-Get your documentation site running locally and make your first customization.
+In ~10 minutes you will:
 
-### Step 1: Set up your local environment
+- Instrument a function with `@guarded_action`
+- Produce a local JSONL ledger at `.agent-sentinel/ledger.jsonl`
+- (Optional) Self-host the platform + create an API key + enable remote sync
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Info>
+  **Requirements**:
+  - Python **3.12+**
+  - Your agent functions already estimate or know per-call cost (USD) for `cost_usd`
+</Info>
 
-### Step 2: Deploy your changes
+## Step 1: Install the SDK
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+```bash
+pip install agent-sentinel
+```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+To enable remote sync (platform uploads), install with:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+```bash
+pip install "agent-sentinel[remote]"
+```
 
-### Step 3: Go live
+## Step 2: Instrument an action
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```python
+from agent_sentinel import guarded_action
 
-## Next steps
+@guarded_action(name="search_web", cost_usd=0.02, tags=["tool", "search"])
+def search_web(query: str) -> dict:
+    # Your tool call here
+    return {"query": query, "results": ["..."]}
 
-Now that you have your docs running, explore these key features:
+search_web("agent sentinel quickstart")
+```
 
-<CardGroup cols={2}>
+## Step 3: Inspect the local ledger
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+By default, Agent Sentinel appends JSON Lines to:
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+```text
+.agent-sentinel/ledger.jsonl
+```
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+Each line is a full JSON object with action metadata:
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+```json
+{
+  "id": "uuid",
+  "timestamp": "2025-01-15T10:30:00.123456Z",
+  "action": "search_web",
+  "cost_usd": 0.02,
+  "duration_ms": 12.3,
+  "outcome": "success",
+  "tags": ["tool", "search"],
+  "payload": {
+    "inputs": {"args": [], "kwargs": {"query": "agent sentinel quickstart"}},
+    "outputs": {"query": "agent sentinel quickstart", "results": ["..."]}
+  }
+}
+```
 
-</CardGroup>
+<Tip>
+  Need to change the ledger directory? Set `AGENT_SENTINEL_HOME` (see <a href="/concepts/ledger">Ledger</a>).
+</Tip>
+
+## Optional: Self-host the platform + enable remote sync
+
+### 1) Start the platform
+
+Follow the full guide at <a href="/platform/self-hosting">Self-hosting</a>.
+
+At a high level:
+
+- Create `platform/.env` with the required variables (superuser, DB, secret key).
+- Run:
+
+```bash
+cd platform
+docker compose up -d
+```
+
+Your API will be on `http://localhost:8000` (local dev override).
+
+### 2) Create an API key (recommended)
+
+1. Get a JWT access token:
+
+```bash
+curl -sS -X POST "http://localhost:8000/api/v1/login/access-token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin@example.com" \
+  -d "password=YOUR_PASSWORD"
+```
+
+2. Create an API key (shown only once):
+
+```bash
+curl -sS -X POST "http://localhost:8000/api/v1/api-keys/" \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"local-dev-agent","is_active":true}'
+```
+
+### 3) Enable SDK remote sync
+
+```python
+from agent_sentinel import enable_remote_sync, flush_and_stop
+
+sync = enable_remote_sync(
+    platform_url="http://localhost:8000",
+    api_token="as_...YOUR_API_KEY...",
+    flush_interval=10.0,
+)
+
+# ... run your agent ...
+
+flush_and_stop()
+```
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  The SDK sends `Authorization: Bearer <token>`; the platform accepts **either** a JWT or an API key for ingestion.
 </Note>

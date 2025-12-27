@@ -1,0 +1,25 @@
+---
+title: "Stats"
+description: "Aggregate cost and reliability metrics for dashboards."
+---
+
+## Aggregate stats
+
+```text
+GET /api/v1/stats/
+```
+
+Optional query:
+
+- `days=<int>`: look back N days
+
+Returns totals such as total runs/actions/cost and average cost/duration per action.
+
+## Daily stats
+
+```text
+GET /api/v1/stats/daily
+```
+
+Returns cost and run counts grouped by day (last 30 days).
+

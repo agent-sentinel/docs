@@ -1,0 +1,50 @@
+---
+title: "Policies"
+description: "Budgets, allow/deny lists, rate limits, and remote policy sync."
+---
+
+Agent Sentinel policies give you a **kill switch** for unsafe actions and a **cost control plane** for your agent.
+
+In v0.1, policies are enforced by the SDK **before** the decorated function executes.
+
+## What policies can do
+
+- **Budgets**
+  - Session budget: cap total spend across the process lifetime
+  - Run budget: cap total spend per run
+  - Action budgets: cap spend for a given action name across calls
+- **Allow/Deny lists**
+  - Deny specific action names
+  - Allowlist mode: only permit a specific set of action names
+- **Rate limits**
+  - Per-action windows: `max_count` per `window_seconds`
+
+If a policy is violated, the SDK raises:
+
+- `BudgetExceededError`
+- `PolicyViolationError`
+
+## Local configuration
+
+You can configure policies in code or via `callguard.yaml`.
+
+See:
+
+- <a href="/sdk/python/policies">SDK policies & budgets</a>
+
+## Remote policy sync (platform)
+
+If you enable remote policy sync, the SDK downloads policies from:
+
+```text
+GET /api/v1/policies/sync?agent_id=...&run_id=...
+```
+
+The platform returns policies by scope:
+
+- **global** (`scope="global"`)
+- **agent** (`scope="agent"`, `target_id=<agent_id>`)
+- **run** (`scope="run"`, `target_id=<run_id>`)
+
+The SDK merges them in order (global → agent → run) and applies the **most restrictive** settings for budgets and limits.
+

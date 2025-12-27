@@ -1,0 +1,28 @@
+---
+title: "Policies API"
+description: "Create policies in the platform and sync them to SDKs."
+---
+
+## CRUD endpoints
+
+- `POST /api/v1/policies/`
+- `GET /api/v1/policies/`
+- `GET /api/v1/policies/{policy_id}`
+- `PUT /api/v1/policies/{policy_id}`
+- `DELETE /api/v1/policies/{policy_id}`
+
+Policy fields include:
+
+- Budgets: `run_budget`, `session_budget`, `action_budgets`
+- Lists: `denied_actions`, `allowed_actions`
+- Rate limits: `rate_limits`
+- Scope: `scope` (`global` / `agent` / `run`) and `target_id`
+
+## Policy sync endpoint (for SDK)
+
+```text
+GET /api/v1/policies/sync?agent_id=...&run_id=...
+```
+
+Returns enabled policies for the current user. The SDK merges them in scope order (global → agent → run).
+

@@ -1,0 +1,48 @@
+---
+title: "Self-hosting"
+description: "Run the Agent Sentinel platform locally with Docker Compose."
+---
+
+## Requirements
+
+- Docker + Docker Compose
+
+## Configure environment
+
+Create `platform/.env`:
+
+```bash
+PROJECT_NAME="Agent Sentinel"
+ENVIRONMENT="local"
+FRONTEND_HOST="http://localhost:5173"
+BACKEND_CORS_ORIGINS="http://localhost:5173"
+
+SECRET_KEY="dev-secret-key-change-me"
+
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="postgres"
+POSTGRES_DB="agent_sentinel"
+POSTGRES_PORT="5432"
+
+FIRST_SUPERUSER="admin@example.com"
+FIRST_SUPERUSER_PASSWORD="changeme-now"
+```
+
+## Start the stack
+
+```bash
+cd platform
+docker compose up -d
+```
+
+Local development ports (via `docker-compose.override.yml`):
+
+- API: `http://localhost:8000`
+- Postgres: `localhost:5432`
+- Adminer: `http://localhost:8080`
+
+## Next steps
+
+- <a href="/platform/auth">Authentication & API keys</a>
+- <a href="/platform/ingest">Ingest</a>
+

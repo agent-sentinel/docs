@@ -1,0 +1,46 @@
+---
+title: "Actions & runs"
+description: "How Agent Sentinel models agent execution: runs contain actions."
+---
+
+## Actions
+
+An **action** is a single instrumented unit of work in your agent (a tool call, API request, DB query, etc.).
+
+In the Python SDK, actions are created by decorating functions with `@guarded_action(...)`.
+
+Each action records:
+
+- **Name**: `name` argument (or the function name)
+- **Cost**: `cost_usd` (you supply the estimate for that call)
+- **Duration**: measured automatically
+- **Outcome**: `"success"`, `"error"`, or `"replayed"`
+- **Inputs/outputs**: captured from the call
+- **Tags**: optional list of strings
+
+## Runs
+
+A **run** represents one execution of your agent (one “session” you want to analyze end-to-end).
+
+On the platform, a run:
+
+- Owns many actions
+- Aggregates `total_cost`
+- Has a `status` such as `"running"` / `"completed"`
+
+## Run IDs in v0.1
+
+In v0.1:
+
+- The **local ledger entries do not include `run_id`** in each JSON line.
+- When using remote sync, the SDK sends a **separate `run_id`** alongside a batch of entries (see <a href="/sdk/python/remote-sync">Remote sync</a>).
+
+This means:
+
+- Local replay currently replays **sequentially** from a ledger file; filtering by `run_id` is limited (see <a href="/sdk/python/replay">Replay</a>).
+- Platform-side run grouping is defined by the `run_id` used by the sync client.
+
+<Tip>
+  If you want stable run grouping, pass an explicit `run_id` into `enable_remote_sync(...)` and keep it fixed for the lifetime of that agent run.
+</Tip>
+

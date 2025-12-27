@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Agent Sentinel",
   "colors": {
     "primary": "#16A34A",
     "light": "#07C983",
@@ -22,27 +22,36 @@
             ]
           },
           {
-            "group": "Customization",
+            "group": "Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/actions-and-runs",
+              "concepts/ledger",
+              "concepts/policies"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "SDK (Python)",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "sdk/python/installation",
+              "sdk/python/instrumentation",
+              "sdk/python/policies",
+              "sdk/python/remote-sync",
+              "sdk/python/replay",
+              "sdk/python/compliance"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Platform",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "platform/overview",
+              "platform/self-hosting",
+              "platform/auth",
+              "platform/ingest",
+              "platform/runs",
+              "platform/policies",
+              "platform/stats",
+              "platform/replay",
+              "platform/compliance"
             ]
           }
         ]
@@ -51,18 +60,9 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Platform API",
             "pages": [
               "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
             ]
           }
         ]
@@ -71,14 +71,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "GitHub",
+          "href": "https://github.com/agent-sentinel/agent-sentinel",
+          "icon": "github"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "PyPI",
+          "href": "https://pypi.org/project/agent-sentinel/",
+          "icon": "python"
         }
       ]
     }
@@ -91,13 +91,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:hello@agentsentinel.dev"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "API Reference",
+      "href": "/api-reference/introduction"
     }
   },
   "contextual": {
@@ -114,9 +114,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/agent-sentinel/agent-sentinel"
     }
   }
 }

@@ -1,0 +1,57 @@
+---
+title: "Compliance (Enterprise foundations)"
+description: "Human-in-the-loop metadata and EU AI Act export endpoints (foundation)."
+---
+
+Agent Sentinel includes foundational hooks for EU AI Act–style logging and human oversight.
+
+<Note>
+  In v0.1 these features are **foundational stubs** and may be gated to Enterprise tiers in production deployments.
+</Note>
+
+## Human approval for actions
+
+Mark an action as requiring approval:
+
+```python
+from agent_sentinel import guarded_action
+
+@guarded_action(
+    name="transfer_funds",
+    cost_usd=0.10,
+    requires_human_approval=True,
+    approval_description="Transfer funds between accounts",
+)
+def transfer_funds(from_acct: str, to_acct: str, amount: float) -> None:
+    ...
+```
+
+If no approval handler is configured, the action is blocked via `PolicyViolationError`.
+
+## Register an approval handler
+
+```python
+from agent_sentinel import HumanApprovalHandler, ApprovalResponse, ApprovalStatus, ApprovalRequest
+
+def approve(request: ApprovalRequest) -> ApprovalResponse:
+    # Replace with your UI/workflow (Slack, web console, etc.)
+    return ApprovalResponse(
+        request_id=request.request_id,
+        status=ApprovalStatus.APPROVED,
+        approver_email="security@example.com",
+        notes="Approved for test",
+    )
+
+HumanApprovalHandler.set_approval_handler(approve)
+```
+
+## Platform compliance endpoints
+
+The platform provides endpoints like:
+
+- `GET /api/v1/compliance/health`
+- `POST /api/v1/compliance/export`
+- `GET /api/v1/compliance/oversight`
+
+See <a href="/platform/compliance">Platform compliance</a>.
+

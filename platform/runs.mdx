@@ -1,0 +1,31 @@
+---
+title: "Runs & actions"
+description: "Query runs and their actions from the platform."
+---
+
+## List runs
+
+```text
+GET /api/v1/runs/
+```
+
+Supports basic filters like `status` and `min_cost`.
+
+## Get a run
+
+```text
+GET /api/v1/runs/{run_id}
+```
+
+Returns the run (and associated actions).
+
+## List actions for a run
+
+```text
+GET /api/v1/runs/{run_id}/actions
+```
+
+<Tip>
+  For dashboards, pair these with <a href="/platform/stats">Stats</a>.
+</Tip>
+

@@ -1,0 +1,44 @@
+---
+title: "Authentication & API keys"
+description: "JWT login for users and API keys for agents."
+---
+
+The platform supports:
+
+- **JWT access tokens** (user login sessions)
+- **API keys** (recommended for SDK agents)
+
+Both are passed as:
+
+```text
+Authorization: Bearer <token>
+```
+
+## Get a JWT (user login)
+
+```bash
+curl -sS -X POST "http://localhost:8000/api/v1/login/access-token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin@example.com" \
+  -d "password=YOUR_PASSWORD"
+```
+
+Response:
+
+```json
+{ "access_token": "jwt...", "token_type": "bearer" }
+```
+
+## Create an API key (recommended for agents)
+
+```bash
+curl -sS -X POST "http://localhost:8000/api/v1/api-keys/" \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"prod-agent","is_active":true}'
+```
+
+<Warning>
+  The API key value is only returned once at creation time. Store it securely.
+</Warning>
+

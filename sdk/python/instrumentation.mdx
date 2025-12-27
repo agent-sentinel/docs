@@ -1,0 +1,46 @@
+---
+title: "Instrumentation"
+description: "Wrap tool calls with telemetry and cost tracking using @guarded_action."
+---
+
+## Basic usage
+
+```python
+from agent_sentinel import guarded_action
+
+@guarded_action(name="search_web", cost_usd=0.02, tags=["tool", "search"])
+def search_web(query: str) -> dict:
+    return {"results": ["..."], "query": query}
+```
+
+Calling `search_web(...)` will:
+
+- Measure duration
+- Record inputs/outputs
+- Append a ledger entry
+
+## Async functions
+
+```python
+from agent_sentinel import guarded_action
+
+@guarded_action(name="call_llm", cost_usd=0.05, tags=["llm"])
+async def call_llm(prompt: str) -> str:
+    return "..."
+```
+
+## Exceptions
+
+Agent Sentinel does **not** swallow your exceptions. If your function raises, the exception propagates normally — the SDK records the action as `outcome="error"` and logs the error string.
+
+## Fail-open vs fail-closed
+
+- **Fail-open**: ledger writes and remote sync should never crash your agent.
+- **Fail-closed**: policy violations intentionally raise before execution (see <a href="/sdk/python/policies">Policies</a>).
+
+## Replay mode integration
+
+If replay mode is active, decorated actions return recorded outputs instead of executing (and are logged with `outcome="replayed"`).
+
+See <a href="/sdk/python/replay">Replay</a>.
+

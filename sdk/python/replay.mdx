@@ -1,0 +1,36 @@
+---
+title: "Replay"
+description: "Mock tool calls with recorded outputs to debug and reduce cost."
+---
+
+Replay lets you run agent logic without re-calling external systems by returning **recorded outputs** for instrumented actions.
+
+## Use replay mode
+
+```python
+from agent_sentinel import replay_mode, guarded_action
+
+@guarded_action(name="fetch_data", cost_usd=0.01)
+def fetch_data(url: str) -> dict:
+    return {"url": url, "data": "..."}
+
+# First run: records to ledger
+fetch_data("https://example.com")
+
+# Later: replay from ledger
+with replay_mode(ledger_path=None, strict=True):
+    fetch_data("https://example.com")  # returns recorded output
+```
+
+## Divergence detection
+
+In strict mode, replay raises `ReplayDivergenceError` when inputs don’t match what was recorded.
+
+## v0.1 limitation (run_id filtering)
+
+In v0.1 the local ledger format does not store `run_id` per entry, so `ReplayMode.from_run_id(...)` cannot reliably filter a single run from a shared ledger file. Replay currently operates over ledger entries **in recorded order**.
+
+<Tip>
+  If you need per-run replay isolation today, write to separate ledgers per run (e.g., via process-level separation or separate `AGENT_SENTINEL_HOME` per run).
+</Tip>
+

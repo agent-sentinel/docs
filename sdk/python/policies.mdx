@@ -1,0 +1,111 @@
+---
+title: "Policies & budgets"
+description: "Enforce cost limits, allow/deny lists, and rate limits in the SDK."
+---
+
+## Configure in code
+
+```python
+from agent_sentinel import PolicyEngine
+
+PolicyEngine.configure(
+    session_budget=5.0,
+    run_budget=1.0,
+    action_budgets={"call_llm": 0.50},
+    denied_actions=["send_money", "delete_database"],
+    allowed_actions=None,
+    rate_limits={
+        "search_web": {"max_count": 20, "window_seconds": 60},
+    },
+    strict_mode=True,
+)
+```
+
+## Configure via YAML (`callguard.yaml`)
+
+Agent Sentinel will search for `callguard.yaml` in:
+
+- `./callguard.yaml`
+- `./.agent-sentinel/callguard.yaml`
+- `$AGENT_SENTINEL_HOME/callguard.yaml`
+
+Example:
+
+```yaml
+budgets:
+  session: 5.0
+  run: 1.0
+  actions:
+    call_llm: 0.50
+
+denied_actions:
+  - send_money
+  - delete_database
+
+rate_limits:
+  search_web:
+    max_count: 20
+    window_seconds: 60
+
+strict_mode: true
+```
+
+Load it:
+
+```python
+from agent_sentinel import PolicyEngine
+
+PolicyEngine.load_from_yaml()
+```
+
+## What happens on violation?
+
+Policy checks run **before** your function executes:
+
+- Denied action / allowlist mismatch / rate limit → `PolicyViolationError`
+- Budget exceeded → `BudgetExceededError`
+
+If you want to handle violations:
+
+```python
+from agent_sentinel import BudgetExceededError, PolicyViolationError
+
+try:
+    # call some guarded action
+    ...
+except BudgetExceededError:
+    # degrade gracefully (switch models, stop the run, etc.)
+    ...
+except PolicyViolationError:
+    # treat as security / safety block
+    ...
+
+## Tracking current spend
+
+```python
+from agent_sentinel import CostTracker
+
+print(CostTracker.get_session_total())
+print(CostTracker.get_run_total())
+
+# Reset between agent runs
+CostTracker.reset_run()
+```
+```
+
+## Remote policy sync (platform)
+
+You can also download and refresh policies from the platform:
+
+```python
+from agent_sentinel import PolicyEngine
+
+PolicyEngine.enable_remote_sync(
+    platform_url="http://localhost:8000",
+    api_token="as_... or jwt ...",
+    agent_id="my-agent",
+    run_id="my-run",
+    refresh_interval=300,
+)
+```
+

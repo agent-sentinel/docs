@@ -1,0 +1,37 @@
+---
+title: "Installation"
+description: "Install the Agent Sentinel Python SDK."
+---
+
+## Requirements
+
+- Python **3.12+**
+
+## Install
+
+```bash
+pip install agent-sentinel
+```
+
+## Optional: enable remote sync
+
+Remote sync uses `httpx` (optional dependency):
+
+```bash
+pip install "agent-sentinel[remote]"
+```
+
+## Import surface
+
+Most users start with:
+
+```python
+from agent_sentinel import guarded_action
+```
+
+For advanced usage:
+
+```python
+from agent_sentinel import PolicyEngine, CostTracker, enable_remote_sync, replay_mode
+```
+

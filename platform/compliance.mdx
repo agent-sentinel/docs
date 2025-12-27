@@ -1,0 +1,35 @@
+---
+title: "Compliance (Enterprise foundations)"
+description: "EU AI Act export and oversight endpoints (foundation)."
+---
+
+The platform includes foundational endpoints intended to support EU AI Act compliance reporting.
+
+<Note>
+  In v0.1, these are foundational stubs (no PDF generation, no immutable/WORM storage). Deployments may gate these to Enterprise tiers.
+</Note>
+
+## Health
+
+```text
+GET /api/v1/compliance/health
+```
+
+Returns the subscription tier and whether compliance features are enabled.
+
+## Export report
+
+```text
+POST /api/v1/compliance/export
+```
+
+Generates a compliance export response containing summary stats, incidents, oversight log stubs, and model-card aggregation (when present in action metadata).
+
+## Oversight log
+
+```text
+GET /api/v1/compliance/oversight
+```
+
+Returns actions that required human approval (based on `compliance_metadata`).
+

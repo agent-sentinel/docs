@@ -1,15 +1,61 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Development"
+description: "Run the platform, web console, and docs locally."
 ---
 
 <Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
+  **Prerequisites (recommended)**:
+  - Docker + Docker Compose
+  - Python 3.12+
+  - Node.js 20+ (for the web console and docs)
 </Info>
 
-Follow these steps to install and run Mintlify on your operating system.
+This page is for contributors and self-hosters running Agent Sentinel locally.
+
+## Platform (FastAPI) local dev
+
+Agent Sentinel’s platform lives in `platform/` and runs with Docker Compose.
+
+1) Create `platform/.env` (minimum required keys):
+
+```bash
+PROJECT_NAME="Agent Sentinel"
+ENVIRONMENT="local"
+FRONTEND_HOST="http://localhost:5173"
+BACKEND_CORS_ORIGINS="http://localhost:5173"
+
+SECRET_KEY="dev-secret-key-change-me"
+
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="postgres"
+POSTGRES_DB="agent_sentinel"
+POSTGRES_PORT="5432"
+
+FIRST_SUPERUSER="admin@example.com"
+FIRST_SUPERUSER_PASSWORD="changeme-now"
+```
+
+2) Start the stack:
+
+```bash
+cd platform
+docker compose up -d
+```
+
+- API: `http://localhost:8000`
+- OpenAPI/Swagger UI: `http://localhost:8000/docs`
+
+## Web console (Next.js)
+
+The web console lives in `web/`.
+
+```bash
+cd web
+pnpm install
+pnpm dev
+```
+
+## Docs (Mintlify)
 
 <Steps>
 <Step title="Install the Mintlify CLI">
@@ -21,9 +67,10 @@ npm i -g mint
 
 <Step title="Preview locally">
 
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
+Navigate to `docs/` and start the preview server:
 
 ```bash
+cd docs
 mint dev
 ```
 
@@ -32,63 +79,22 @@ A local preview of your documentation will be available at `http://localhost:300
 </Step>
 </Steps>
 
-## Custom ports
-
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
-
-```bash
-mint dev --port 3333
-```
-
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
-
-```bash
-npm mint update
-```
-
-## Validating links
-
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
-
-```bash
-mint broken-links
-```
-
-## Deployment
-
-If the deployment is successful, you should see the following:
-
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
-
-## Code formatting
-
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
-
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
+  <Accordion title="API returns 422 / auth errors">
 
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
+    - Ensure `platform/.env` is set (especially `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`).
+    - Use `POST /api/v1/login/access-token` to get a JWT, then call protected endpoints with `Authorization: Bearer <jwt>`.
   </Accordion>
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
+  <Accordion title="Docs preview doesn't start">
+    Try updating the CLI and restarting:
+
+```bash
+npm i -g mint
+cd docs
+mint dev
+```
   </Accordion>
 </AccordionGroup>
-
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).

@@ -1,0 +1,56 @@
+---
+title: "Remote sync"
+description: "Upload local ledger entries to the Agent Sentinel Platform in the background."
+---
+
+Remote sync batches local ledger entries and uploads them to the platform ingest endpoint:
+
+```text
+POST /api/v1/ingest/
+```
+
+## Install
+
+```bash
+pip install "agent-sentinel[remote]"
+```
+
+## Enable sync (recommended)
+
+```python
+from agent_sentinel import enable_remote_sync, flush_and_stop
+
+sync = enable_remote_sync(
+    platform_url="http://localhost:8000",
+    api_token="as_...YOUR_API_KEY...",
+    run_id=None,            # optional; auto-generated if None
+    flush_interval=10.0,    # seconds between uploads
+)
+
+# If you want to query the run in the platform API:
+print(sync.config.run_id)
+
+# ... run your agent ...
+
+flush_and_stop()
+```
+
+## Authentication
+
+The SDK sends:
+
+```text
+Authorization: Bearer <api_token>
+```
+
+The platform ingest route accepts:
+
+- JWT tokens (user sessions)
+- API keys (recommended for agents)
+
+## Operational behavior
+
+- Uploads are retried with exponential backoff (network/server errors).
+- Auth failures (401) are not retried.
+- If the platform is down, entries remain local and your agent continues.
+

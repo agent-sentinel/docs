@@ -1,0 +1,62 @@
+---
+title: "Ledger"
+description: "Local-first JSONL log format written by the SDK."
+---
+
+The Agent Sentinel SDK writes **append-only JSON Lines** to a local ledger by default.
+
+## Location
+
+Default path (relative to your current working directory):
+
+```text
+.agent-sentinel/ledger.jsonl
+```
+
+Override the base directory with:
+
+```bash
+export AGENT_SENTINEL_HOME="/var/log/my-agent"
+```
+
+## Format (JSONL)
+
+Each line is a complete JSON object representing one action:
+
+```json
+{
+  "id": "uuid",
+  "timestamp": "ISO-8601",
+  "action": "action_name",
+  "cost_usd": 0.01,
+  "duration_ms": 123.4,
+  "outcome": "success",
+  "tags": ["tag1", "tag2"],
+  "payload": {
+    "inputs": {"args": [], "kwargs": {}},
+    "outputs": {}
+  }
+}
+```
+
+## Fail-open behavior
+
+Ledger writes are **fail-open**: if the SDK cannot write (permissions, disk full, etc.), it logs an internal error and your agent continues.
+
+## PII / secrets
+
+Inputs and outputs may contain sensitive data. You should treat the ledger like application logs:
+
+- Store it securely
+- Rotate and redact if needed
+- Avoid logging raw secrets in tool inputs
+
+## Rotation
+
+Ledger files grow over time. A simple rotation pattern:
+
+```bash
+mv .agent-sentinel/ledger.jsonl .agent-sentinel/ledger-$(date +%Y%m%d).jsonl
+gzip .agent-sentinel/ledger-*.jsonl
+```
+

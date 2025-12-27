@@ -1,97 +1,76 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Agent Sentinel"
+description: "Kill switch, observability, and cost control for Python AI agents."
 ---
 
-## Setting up
+Agent Sentinel helps you **observe**, **control cost**, and **enforce safety policies** across AI agent runs—without breaking your agent when telemetry fails.
 
-Get your documentation site up and running in minutes.
+In v0.1 you get:
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+- **Python SDK**: `@guarded_action` decorator, local-first JSONL ledger, budgets & policies, remote sync, replay mode.
+- **Platform (FastAPI)**: ingest endpoint, runs/actions API, policy management + policy sync for SDK, stats endpoints, replay analysis endpoints.
+- **Enterprise foundations**: EU AI Act compliance endpoints + human-in-the-loop metadata hooks (feature-gated).
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Instrument your agent, emit a ledger locally, and (optionally) sync to the platform.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Python SDK" icon="python" href="/sdk/python/installation">
+    Installation, instrumentation patterns, policies, remote sync, replay.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Platform" icon="server" href="/platform/overview">
+    Self-hosting, auth & API keys, ingest payloads, runs/actions, policies.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Auto-generated OpenAPI reference for the FastAPI platform.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## How Agent Sentinel fits into your agent
 
-Everything you need to create world-class documentation.
+At runtime your agent code calls tools / functions. Agent Sentinel wraps those calls:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+- **Before execution**: policy engine checks allow/deny lists, budgets, and rate limits.
+- **After execution**: a ledger entry is appended (inputs, outputs, cost, duration, outcome).
+- **Optional**: a background sync thread batches ledger entries to the platform (`/api/v1/ingest/`).
 
-## Need inspiration?
+```text
+┌────────────────────────────┐
+│ Your agent code            │
+│  @guarded_action(...)      │
+└──────────────┬─────────────┘
+               │ (policy check + timing)
+               ▼
+┌────────────────────────────┐
+│ Local ledger (.jsonl)      │
+│  .agent-sentinel/ledger…   │
+└──────────────┬─────────────┘
+               │ (optional background sync)
+               ▼
+┌────────────────────────────┐
+│ Platform API (FastAPI)     │
+│  POST /api/v1/ingest/      │
+└──────────────┬─────────────┘
+               ▼
+┌────────────────────────────┐
+│ Postgres (runs + actions)  │
+└────────────────────────────┘
+```
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## What to read next
+
+<CardGroup cols={3}>
+  <Card title="Actions & runs" icon="diagram-project" href="/concepts/actions-and-runs">
+    The core data model: runs contain actions; actions have cost and outcome.
+  </Card>
+  <Card title="Policies" icon="shield" href="/concepts/policies">
+    Budgets, allow/deny lists, rate limits, and remote policy sync.
+  </Card>
+  <Card title="Remote sync" icon="cloud-arrow-up" href="/sdk/python/remote-sync">
+    Push local ledger entries to the platform in the background.
+  </Card>
+</CardGroup>
+
+<Note>
+  Agent Sentinel is **fail-open for telemetry** (ledger writes and sync should never crash your agent), but **policy enforcement is fail-closed** by design (violations raise).
+</Note>

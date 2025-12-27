@@ -1,0 +1,27 @@
+---
+title: "Replay (platform)"
+description: "Replay analysis endpoints for determinism and divergence detection."
+---
+
+The platform includes endpoints that **simulate** replay and analyze runs for non-determinism.
+
+<Note>
+  In v0.1 the platform replay endpoint does not execute your code. For actual replay execution, use the SDK (<a href="/sdk/python/replay">Replay</a>).
+</Note>
+
+## Replay a run (simulation)
+
+```text
+POST /api/v1/replay/{run_id}
+```
+
+This inspects recorded inputs and flags common sources of non-determinism (timestamps, random values, UUIDs).
+
+## Determinism analysis
+
+```text
+GET /api/v1/replay/analysis/{run_id}
+```
+
+Returns a “determinism score” and recommendations.
+
