@@ -3,9 +3,18 @@
   "theme": "mint",
   "name": "Agent Sentinel",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#000000",
+    "light": "#FFFFFF",
+    "dark": "#000000",
+    "background": {
+      "light": "#FFFFFF",
+      "dark": "#0A0A0A"
+    }
+  },
+  "fonts": {
+    "heading": "Space Grotesk",
+    "body": "DM Sans",
+    "code": "JetBrains Mono"
   },
   "favicon": "/favicon.svg",
   "navigation": {
