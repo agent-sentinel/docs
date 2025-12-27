@@ -1,0 +1,28 @@
+/* Global docs styling overrides.
+   Mintlify automatically applies any .css file placed in the docs content directory.
+   Ref: https://www.mintlify.com/docs/customize/custom-scripts
+*/
+
+/* Match the web console's code font (JetBrains Mono via Google Fonts). */
+code,
+pre,
+kbd,
+samp,
+.code-block,
+.code-block code,
+.code-group code,
+.request-example code,
+.response-example code {
+  font-family:
+    "JetBrains Mono",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace !important;
+}
+
+

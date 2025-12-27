@@ -5,16 +5,18 @@
   "colors": {
     "primary": "#000000",
     "light": "#FFFFFF",
-    "dark": "#000000",
-    "background": {
-      "light": "#FFFFFF",
-      "dark": "#0A0A0A"
-    }
+    "dark": "#000000"
   },
   "fonts": {
-    "heading": "Space Grotesk",
-    "body": "DM Sans",
-    "code": "JetBrains Mono"
+    "family": "DM Sans",
+    "heading": {
+      "family": "Space Grotesk",
+      "weight": 600
+    },
+    "body": {
+      "family": "DM Sans",
+      "weight": 400
+    }
   },
   "favicon": "/favicon.svg",
   "navigation": {
