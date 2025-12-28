@@ -1,44 +1,154 @@
 ---
-title: "Authentication & API keys"
-description: "JWT login for users and API keys for agents."
+title: "Authentication"
+description: "API keys for SDK integration and JWT tokens for web console access."
 ---
 
-The platform supports:
+The Agent Sentinel platform uses two authentication methods:
 
-- **JWT access tokens** (user login sessions)
-- **API keys** (recommended for SDK agents)
+- **API keys** - For SDK integration (recommended)
+- **JWT tokens** - For web console access (automatic via Clerk)
 
-Both are passed as:
+Both are passed as HTTP headers:
 
 ```text
 Authorization: Bearer <token>
 ```
 
-## Get a JWT (user login)
+## API keys (for SDK)
+
+API keys are long-lived credentials for authenticating SDK requests to the platform.
+
+### Generate an API key
+
+**Via web console (recommended):**
+
+1. Log in to [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Navigate to **Settings** → **API Keys**
+3. Click **Generate New Key**
+4. Copy the key immediately (shown only once)
+5. Store it securely (password manager, secrets vault)
+
+**Via API:**
 
 ```bash
-curl -sS -X POST "http://localhost:8000/api/v1/login/access-token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@example.com" \
-  -d "password=YOUR_PASSWORD"
+curl -X POST "https://platform.agentsentinel.dev/api/v1/api-keys/" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"production-agent"}'
 ```
 
 Response:
 
 ```json
-{ "access_token": "jwt...", "token_type": "bearer" }
-```
-
-## Create an API key (recommended for agents)
-
-```bash
-curl -sS -X POST "http://localhost:8000/api/v1/api-keys/" \
-  -H "Authorization: Bearer YOUR_JWT" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"prod-agent","is_active":true}'
+{
+  "id": "key_abc123",
+  "key": "as_a1b2c3d4e5f6...",
+  "key_prefix": "as_a1b2c3",
+  "name": "production-agent",
+  "created_at": "2024-12-28T10:00:00Z"
+}
 ```
 
 <Warning>
-  The API key value is only returned once at creation time. Store it securely.
+The full API key value (`as_...`) is only shown once at creation time. Copy and store it immediately - you cannot retrieve it later.
 </Warning>
+
+### Use an API key in SDK
+
+```python
+from agent_sentinel import enable_remote_sync
+
+enable_remote_sync(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",  # Use your API key
+    run_id="run-001"
+)
+```
+
+### Manage API keys
+
+**List your keys:**
+
+```bash
+curl "https://platform.agentsentinel.dev/api/v1/api-keys/" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Revoke a key:**
+
+```bash
+curl -X DELETE "https://platform.agentsentinel.dev/api/v1/api-keys/{key_id}" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## JWT tokens (for web console)
+
+JWT tokens are automatically managed by the web console via Clerk authentication. You don't need to handle these manually for SDK usage.
+
+### When you need a JWT
+
+JWTs are required for:
+- Accessing the web console
+- Making API calls from the browser
+- Programmatic API access (e.g., scripts, CI/CD)
+
+### Get a JWT token
+
+**Via web console:**
+
+JWTs are automatically included in all web console requests - no action needed.
+
+**Programmatic access:**
+
+If you need a JWT for API scripts, use Clerk's session tokens:
+
+1. Log in to the web console
+2. Open browser DevTools → Console
+3. Run:
+   ```javascript
+   await window.Clerk.session.getToken()
+   ```
+4. Copy the token (valid for 1 hour)
+
+### JWT expiration
+
+- **Web console**: Tokens auto-refresh - you stay logged in
+- **Programmatic**: Tokens expire after 1 hour - regenerate as needed
+
+## Best practices
+
+<Tip>
+**Use API keys for agents**: API keys are long-lived and designed for server-side usage. JWTs expire and are meant for user sessions.
+</Tip>
+
+<Tip>
+**Rotate keys regularly**: Generate new API keys every 90 days and delete old ones.
+</Tip>
+
+<Warning>
+**Never commit keys to git**: Use environment variables or secrets management (AWS Secrets Manager, HashiCorp Vault, etc.).
+</Warning>
+
+<Tip>
+**Use separate keys per environment**: Different API keys for dev, staging, and production.
+</Tip>
+
+## Troubleshooting
+
+**"401 Unauthorized"**
+
+- Verify API key is correct (starts with `as_`)
+- Check key is still active (not revoked)
+- Ensure you're using `Authorization: Bearer <key>` header
+
+**"API key not working after creation"**
+
+- Keys may take up to 30 seconds to propagate
+- Verify you copied the full key including `as_` prefix
+- Test with a simple API call to verify
+
+## See also
+
+- [Quickstart](/quickstart) - Get your first API key and connect to the platform
+- [Settings](/console/settings#api-keys) - Manage API keys in the web console
 

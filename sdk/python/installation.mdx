@@ -5,12 +5,12 @@ description: "Install the Agent Sentinel Python SDK."
 
 ## Requirements
 
-- Python **3.12+**
+- Python **3.9+**
 
 ## Install
 
 ```bash
-pip install agent-sentinel
+pip install agentsentinel-sdk
 ```
 
 ## Optional: enable remote sync
@@ -18,7 +18,31 @@ pip install agent-sentinel
 Remote sync uses `httpx` (optional dependency):
 
 ```bash
-pip install "agent-sentinel[remote]"
+pip install "agentsentinel-sdk[remote]"
+```
+
+## Optional: LLM integrations
+
+For transparent LLM instrumentation (OpenAI, Anthropic, Grok, Gemini):
+
+```bash
+pip install "agentsentinel-sdk[llm]"
+```
+
+## Optional: Framework integrations
+
+For LangChain and CrewAI support:
+
+```bash
+pip install "agentsentinel-sdk[integrations]"
+```
+
+## Install everything
+
+All optional dependencies:
+
+```bash
+pip install "agentsentinel-sdk[all]"
 ```
 
 ## Import surface

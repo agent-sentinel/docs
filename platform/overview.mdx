@@ -1,13 +1,16 @@
 ---
-title: "Overview"
-description: "Agent Sentinel Platform: ingest, store, and query agent runs."
+title: "Platform API Overview"
+description: "The Agent Sentinel cloud platform API for ingesting telemetry and querying data."
 ---
 
-The Agent Sentinel Platform is a FastAPI backend that:
+The Agent Sentinel Platform API is a cloud service that:
 
-- Accepts SDK uploads (`POST /api/v1/ingest/`)
-- Stores **runs** and **actions** in Postgres
-- Serves APIs for querying runs/actions, managing policies, and reporting stats
+- Accepts SDK telemetry uploads (`POST /api/v1/ingest/`)
+- Stores **runs** and **actions** securely in the cloud
+- Provides APIs for querying runs/actions, managing policies, and viewing analytics
+- Powers the web console with real-time WebSocket updates
+
+**Base URL**: `https://platform.agentsentinel.dev`
 
 ## Key endpoints
 
@@ -35,7 +38,27 @@ The Agent Sentinel Platform is a FastAPI backend that:
   - `POST /api/v1/replay/{run_id}`
   - `GET /api/v1/replay/analysis/{run_id}`
 
-<Tip>
-  Browse the live OpenAPI docs at `http://localhost:8000/docs` when running locally.
-</Tip>
+## Authentication
+
+All API requests require authentication via:
+- **API keys** (recommended for SDK integration) - Generated in the web console
+- **JWT tokens** (for web console access) - Automatic via Clerk authentication
+
+See [Authentication](/platform/auth) for details.
+
+## Getting started
+
+1. Sign up at [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Generate an API key in **Settings** → **API Keys**
+3. Use the key in your SDK:
+   ```python
+   enable_remote_sync(
+       platform_url="https://platform.agentsentinel.dev",
+       api_token="as_your_api_key_here"
+   )
+   ```
+
+## OpenAPI specification
+
+Full API documentation is available in the [API Reference](/api-reference/introduction) section.
 

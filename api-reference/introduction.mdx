@@ -1,15 +1,15 @@
 ---
-title: "Introduction"
-description: "OpenAPI reference for the Agent Sentinel Platform (FastAPI)."
+title: "API Reference"
+description: "Complete API reference for the Agent Sentinel cloud platform."
 ---
 
-This section is generated from the platform’s OpenAPI spec at `docs/api-reference/openapi.json`.
+This section provides the complete API reference for the Agent Sentinel cloud platform.
 
 ## Base URL
 
-Local dev (default): `http://localhost:8000`
+**Production**: `https://platform.agentsentinel.dev`
 
-All endpoints are under:
+All endpoints are prefixed with:
 
 ```text
 /api/v1
@@ -17,23 +17,70 @@ All endpoints are under:
 
 ## Authentication
 
-Most endpoints require an `Authorization` header:
+All API requests require an `Authorization` header:
 
 ```bash
 Authorization: Bearer <token>
 ```
 
-For ingestion, the platform accepts either:
+The platform accepts two authentication methods:
 
-- **JWT access token** (obtained via `POST /api/v1/login/access-token`)
-- **API key** (created via `POST /api/v1/api-keys/`)
+- **API keys** (recommended for SDK) - Generated in the web console
+- **JWT tokens** (for web console access) - Automatic via Clerk
 
 <Tip>
-  For agents, prefer **API keys** over user JWTs.
+For SDK integration, use **API keys**. They're long-lived and designed for programmatic access.
 </Tip>
 
-## FastAPI Swagger UI
+### Get an API key
 
-When self-hosting, you can also browse the live Swagger UI at:
+1. Log in to [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Navigate to **Settings** → **API Keys**
+3. Click **Generate New Key**
+4. Copy the key (starts with `as_`)
+5. Use in your requests:
 
-`http://localhost:8000/docs`
+```bash
+curl -H "Authorization: Bearer as_your_api_key_here" \
+  https://platform.agentsentinel.dev/api/v1/runs
+```
+
+## Rate limits
+
+API requests are rate-limited to:
+- **1000 requests per minute** per API key
+- **10,000 requests per day** per organization
+
+Exceeding limits returns `HTTP 429 Too Many Requests`.
+
+## Error responses
+
+All errors return JSON with a consistent structure:
+
+```json
+{
+  "detail": "Error message here",
+  "error_code": "BUDGET_EXCEEDED",
+  "status_code": 400
+}
+```
+
+Common status codes:
+- `400` - Bad request (invalid parameters)
+- `401` - Unauthorized (invalid/missing API key)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not found
+- `429` - Too many requests (rate limited)
+- `500` - Internal server error
+
+## Getting started
+
+See the [Quickstart guide](/quickstart) for a complete walkthrough of:
+1. Signing up for Agent Sentinel
+2. Generating your first API key
+3. Connecting the SDK to the platform
+4. Viewing telemetry in the web console
+
+## Full API documentation
+
+Detailed endpoint documentation is available in the [Platform API](/platform/overview) section.

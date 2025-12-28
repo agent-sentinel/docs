@@ -155,6 +155,7 @@ try:
     enable_remote_sync(
         platform_url="https://platform.agentsentinel.dev",
         api_token="as_invalid_token",
+        run_id="run-123"
     )
 except NetworkError as e:
     print(f"Network error: {e.message}")

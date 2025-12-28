@@ -3,30 +3,30 @@ title: "Quickstart"
 description: "Instrument your agent in minutes, with local-first logs and optional platform sync."
 ---
 
-## What you’ll build
+## What you'll build
 
 In ~10 minutes you will:
 
 - Instrument a function with `@guarded_action`
 - Produce a local JSONL ledger at `.agent-sentinel/ledger.jsonl`
-- (Optional) Self-host the platform + create an API key + enable remote sync
+- Connect to the Agent Sentinel cloud platform to view telemetry in real-time
 
 <Info>
   **Requirements**:
-  - Python **3.12+**
+  - Python **3.9+**
   - Your agent functions already estimate or know per-call cost (USD) for `cost_usd`
 </Info>
 
 ## Step 1: Install the SDK
 
 ```bash
-pip install agent-sentinel
+pip install agentsentinel-sdk
 ```
 
 To enable remote sync (platform uploads), install with:
 
 ```bash
-pip install "agent-sentinel[remote]"
+pip install "agentsentinel-sdk[remote]"
 ```
 
 ## Step 2: Instrument an action
@@ -72,60 +72,63 @@ Each line is a full JSON object with action metadata:
   Need to change the ledger directory? Set `AGENT_SENTINEL_HOME` (see <a href="/concepts/ledger">Ledger</a>).
 </Tip>
 
-## Optional: Self-host the platform + enable remote sync
+## Step 4: Connect to the cloud platform
 
-### 1) Start the platform
+### 1) Sign up for Agent Sentinel
 
-Follow the full guide at <a href="/platform/self-hosting">Self-hosting</a>.
+Visit [console.agentsentinel.dev](https://console.agentsentinel.dev) and create an account.
 
-At a high level:
+### 2) Generate an API key
 
-- Create `platform/.env` with the required variables (superuser, DB, secret key).
-- Run:
+1. Navigate to **Settings** → **API Keys**
+2. Click **Generate New Key**
+3. Copy the key immediately (shown only once)
+4. Store it securely
 
-```bash
-cd platform
-docker compose up -d
-```
-
-Your API will be on `http://localhost:8000` (local dev override).
-
-### 2) Create an API key (recommended)
-
-1. Get a JWT access token:
-
-```bash
-curl -sS -X POST "http://localhost:8000/api/v1/login/access-token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin@example.com" \
-  -d "password=YOUR_PASSWORD"
-```
-
-2. Create an API key (shown only once):
-
-```bash
-curl -sS -X POST "http://localhost:8000/api/v1/api-keys/" \
-  -H "Authorization: Bearer YOUR_JWT" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"local-dev-agent","is_active":true}'
-```
-
-### 3) Enable SDK remote sync
+### 3) Enable remote sync in your code
 
 ```python
-from agent_sentinel import enable_remote_sync, flush_and_stop
+from agent_sentinel import enable_remote_sync, flush_and_stop, guarded_action
 
+# Enable platform sync
 sync = enable_remote_sync(
-    platform_url="http://localhost:8000",
-    api_token="as_...YOUR_API_KEY...",
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
     flush_interval=10.0,
 )
 
-# ... run your agent ...
+# Your instrumented functions
+@guarded_action(name="search_web", cost_usd=0.02, tags=["tool", "search"])
+def search_web(query: str) -> dict:
+    return {"query": query, "results": ["..."]}
 
+# Use your agent
+search_web("agent sentinel quickstart")
+
+# Graceful shutdown (flushes remaining logs)
 flush_and_stop()
 ```
 
-<Note>
-  The SDK sends `Authorization: Bearer <token>`; the platform accepts **either** a JWT or an API key for ingestion.
-</Note>
+### 4) View telemetry in the web console
+
+1. Go to [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Navigate to **Runs** to see your agent execution
+3. Click into a run to see all actions, costs, and timing
+4. Explore **Interventions**, **Activity Ledger**, and **Analytics**
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set up policies" icon="shield" href="/sdk/python/policies">
+    Configure budget limits, denied actions, and rate limits
+  </Card>
+  <Card title="Add approvals" icon="user-check" href="/sdk/python/approvals">
+    Require human approval for sensitive actions
+  </Card>
+  <Card title="Instrument LLMs" icon="brain" href="/sdk/python/llm-integrations">
+    Automatically track OpenAI, Anthropic, Grok, or Gemini calls
+  </Card>
+  <Card title="Web console guide" icon="desktop" href="/console/overview">
+    Learn all the features of the web console
+  </Card>
+</CardGroup>

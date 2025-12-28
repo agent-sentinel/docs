@@ -496,10 +496,11 @@ Risk: CRITICAL
 4. Copy key
 5. Update SDK configuration:
    ```python
-   # Old key
-   api_token="as_old_key_here"
-   # New key
-   api_token="as_new_key_copied_from_settings"
+   enable_remote_sync(
+       platform_url="https://platform.agentsentinel.dev",
+       api_token="as_new_key_copied_from_settings",  # New key
+       run_id="run-001"
+   )
    ```
 6. Deploy updated configuration
 7. Monitor "Last Used" on new key

@@ -12,7 +12,7 @@ POST /api/v1/ingest/
 ## Install
 
 ```bash
-pip install "agent-sentinel[remote]"
+pip install "agentsentinel-sdk[remote]"
 ```
 
 ## Enable sync (recommended)
@@ -21,8 +21,8 @@ pip install "agent-sentinel[remote]"
 from agent_sentinel import enable_remote_sync, flush_and_stop
 
 sync = enable_remote_sync(
-    platform_url="http://localhost:8000",
-    api_token="as_...YOUR_API_KEY...",
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
     run_id=None,            # optional; auto-generated if None
     flush_interval=10.0,    # seconds between uploads
 )

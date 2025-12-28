@@ -42,8 +42,7 @@
             "group": "Getting started",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "quickstart"
             ]
           },
           {
@@ -72,13 +71,10 @@
             ]
           },
           {
-            "group": "Platform",
-            "hidden": true,
+            "group": "Platform API",
             "pages": [
               "platform/overview",
-              "platform/self-hosting",
               "platform/auth",
-              "platform/ingest",
               "platform/runs",
               "platform/ledger",
               "platform/agents",
