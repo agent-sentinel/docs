@@ -8,6 +8,7 @@ Agent Sentinel helps you **observe**, **control cost**, and **enforce safety pol
 ## What you get
 
 ### Python SDK
+
 - **Instrumentation**: `@guarded_action` decorator for automatic telemetry
 - **Policy enforcement**: Budgets, allow/deny lists, rate limits
 - **Human-in-the-loop**: Approval workflows for sensitive actions
@@ -19,10 +20,11 @@ Agent Sentinel helps you **observe**, **control cost**, and **enforce safety pol
 - **MCP client**: Model Context Protocol for LLM-platform interaction
 - **Error handling**: Comprehensive error types with recovery strategies
 
-### Platform (FastAPI)
+### Platform
+
 - **Agent discovery**: Automatic registration and metrics
-- **Interventions API**: Track policy enforcement and cost prevention
-- **Approvals API**: Human-in-the-loop approval workflows
+- **Interventions**: Track policy enforcement and cost prevention
+- **Approvals**: Human-in-the-loop approval workflows
 - **Activity Ledger**: Complete audit trail with advanced filtering
 - **WebSocket real-time**: Live event streaming
 - **MCP endpoints**: LLM-native API for autonomous operations
@@ -31,6 +33,7 @@ Agent Sentinel helps you **observe**, **control cost**, and **enforce safety pol
 - **Compliance**: EU AI Act Article 14 support
 
 ### Web Console
+
 - **Real-time dashboard**: Live monitoring with WebSocket updates
 - **Interventions page**: Policy enforcement visibility
 - **Approvals inbox**: Review and approve sensitive actions
@@ -47,7 +50,7 @@ Agent Sentinel helps you **observe**, **control cost**, and **enforce safety pol
   <Card title="Python SDK" icon="python" href="/sdk/python/installation">
     Full SDK documentation - instrumentation, policies, approvals, LLM integrations.
   </Card>
-  <Card title="Platform API" icon="server" href="/platform/overview">
+  <Card title="Platform API" icon="server">
     Platform documentation - agents, interventions, approvals, real-time updates.
   </Card>
   <Card title="Web Console" icon="desktop" href="/console/overview">
@@ -77,7 +80,7 @@ At runtime your agent code calls tools / functions. Agent Sentinel wraps those c
                │ (optional background sync)
                ▼
 ┌────────────────────────────┐
-│ Platform API (FastAPI)     │
+│ Platform                   │
 │  POST /api/v1/ingest/      │
 └──────────────┬─────────────┘
                ▼
