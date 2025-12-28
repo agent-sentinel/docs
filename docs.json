@@ -94,10 +94,7 @@
       ]
     }
   },
-  "logo": {
-    "light": "/logo/logoshield-transparent.png",
-    "dark": "/logo/logoshield-transparent.png"
-  },
+  "logo": "/logo/full_logo.jpg",
   "navbar": {
     "links": [
       {
