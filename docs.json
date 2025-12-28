@@ -104,18 +104,6 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "API reference",
-        "hidden": true,
-        "groups": [
-          {
-            "group": "Platform API",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          }
-        ]
       }
     ]
   },
