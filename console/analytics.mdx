@@ -1,0 +1,373 @@
+---
+title: "Analytics Page"
+description: "Cost and performance analytics with visual dashboards and trend analysis."
+---
+
+## Overview
+
+The **Analytics Page** provides visual insights into agent costs and performance. Track spending trends, identify expensive operations, and optimize your agent fleet.
+
+## Time window selector
+
+At the top, choose time range:
+- **Last 24 hours**
+- **Last 7 days**
+- **Last 30 days**
+- **All time**
+
+All charts and stats update based on selected window.
+
+## Cost dashboard
+
+### 30-day consumption chart
+
+**Bar chart** showing daily costs:
+
+- **X-axis**: Dates (last 30 days)
+- **Y-axis**: Cost (USD)
+- **Bars**: Daily spending
+- **Hover**: See exact cost for each day
+
+**Visual features:**
+- **Color coding**:
+  - 🟢 Green - Below average
+  - 🟡 Yellow - Average
+  - 🔴 Red - Above average
+- **Trend line**: Overlaid to show direction
+- **Annotations**: Mark significant events (deployments, incidents)
+
+**Insights:**
+- Spot cost spikes
+- Identify trends (increasing/decreasing)
+- Correlate with deployments or changes
+- Weekly patterns (weekdays vs weekends)
+
+### Total consumption
+
+Large stat card showing:
+- **Total Cost** - Sum for selected time window
+- **Comparison** - vs previous period
+  - ⬆️ 15% increase
+  - ⬇️ 10% decrease
+  - ➡️ No change (< 2%)
+- **Projection** - Estimated monthly cost (if trend continues)
+
+**Example:**
+```
+Total Consumption (Last 30 days)
+$567.89
+⬆️ 15% vs previous 30 days
+Projected monthly: ~$580
+```
+
+### Daily breakdown table
+
+Table showing each day with:
+- **Date**
+- **Runs** - Count of runs
+- **Actions** - Count of actions
+- **Cost** - Total USD
+- **Avg Cost per Run** - Mean cost
+- **Avg Cost per Action** - Mean cost
+
+**Sorting:**
+- Click any column header to sort
+- Default: Date (descending)
+
+**Export:**
+- Download as CSV for analysis in Excel/BI tools
+
+## Performance dashboard
+
+### Average metrics
+
+Three stat cards:
+
+**1. Avg Cost per Action**
+```
+$0.0123
+⬇️ 5% vs previous period
+```
+Lower is better - shows efficiency improving.
+
+**2. Avg Duration per Action**
+```
+523ms
+➡️ No change vs previous period
+```
+Lower is better - shows performance.
+
+**3. Actions per Run**
+```
+37.2
+⬆️ 8% vs previous period
+```
+Context-dependent - more actions = more work done OR inefficiency.
+
+### Cost by action type
+
+**Pie chart** showing distribution:
+- Each slice = one action type
+- Size = proportion of total cost
+- Hover for exact amount
+- Click to filter ledger by that action
+
+**Example breakdown:**
+- 🔵 call_llm: $234.56 (41%)
+- 🟢 search_web: $123.45 (22%)
+- 🟡 fetch_data: $89.12 (16%)
+- 🟠 analyze_text: $67.89 (12%)
+- Others: $52.87 (9%)
+
+**Insights:**
+- Identify top cost drivers
+- Focus optimization on largest slices
+- Track changes over time
+
+### Cost by agent
+
+**Bar chart** (horizontal) showing:
+- Agent names (Y-axis)
+- Cost (X-axis)
+- Sorted by cost (descending)
+- Color-coded by relative cost
+
+**Use cases:**
+- Identify most expensive agents
+- Compare agent efficiency
+- Budget allocation by agent
+
+### Actions over time
+
+**Line chart** showing:
+- **X-axis**: Time (hours, days, or months based on window)
+- **Y-axis**: Action count
+- **Multiple lines**: Different action types
+
+**Insights:**
+- Usage patterns (peak times)
+- Growth trends
+- Action mix changes
+
+## Cost optimization recommendations
+
+**AI-powered suggestions** based on your data:
+
+### High-cost actions
+
+```
+💡 Recommendation: Optimize LLM calls
+
+Finding: "call_llm" accounts for 45% of costs ($234.56)
+
+Suggestions:
+• Reduce max_tokens from 1000 to 500 (potential savings: ~$100/month)
+• Use gpt-4o-mini for simple queries (potential savings: ~$80/month)
+• Implement response caching (potential savings: ~$50/month)
+
+Total potential savings: $230/month (40%)
+```
+
+### Inefficient patterns
+
+```
+⚠️ Warning: Redundant API calls detected
+
+Finding: Agent "trading-bot" calls "fetch_price" avg 15 times per run
+
+Suggestion: Cache price data for 5 minutes to reduce API calls
+
+Potential savings: $45/month
+```
+
+### Rate limiting opportunities
+
+```
+💡 Recommendation: Add rate limiting
+
+Finding: "search_web" called 500+ times/day
+
+Suggestion: Rate limit to 100 calls/hour to prevent runaway costs
+
+Risk reduction: Prevents potential $1000+ cost incidents
+```
+
+## Filters and segmentation
+
+### Filter by agent
+
+Select specific agents to analyze:
+- Compare costs across agents
+- Focus on one agent's performance
+- Identify underutilized agents
+
+### Filter by action type
+
+Select specific action types:
+- Analyze LLM costs separately
+- Track API call costs
+- Compare tool usage
+
+### Group by
+
+Change aggregation:
+- **By day** - Daily breakdown
+- **By hour** - Hourly breakdown (for 24h window)
+- **By week** - Weekly breakdown (for 30d+ window)
+- **By month** - Monthly breakdown (for all time)
+
+## Cost alerts (future)
+
+**Coming soon**: Automated cost alerts:
+
+- **Budget thresholds** - Alert when approaching budget
+- **Anomalies** - Detect unusual cost spikes
+- **Projections** - Warn if projected monthly cost exceeds budget
+- **Delivery** - Email, Slack, webhooks
+
+## Common workflows
+
+### Monthly cost review
+
+1. Select "Last 30 days" time window
+2. Review total consumption
+3. Check 30-day chart for spikes
+4. Investigate anomalies:
+   - Click spike day in chart
+   - Filter Activity Ledger by that date
+   - Review expensive actions
+5. Check cost by action type pie chart
+6. Read optimization recommendations
+7. Implement suggested optimizations
+
+### Agent cost comparison
+
+1. View "Cost by Agent" chart
+2. Identify top 3 most expensive agents
+3. For each agent:
+   - Click bar to navigate to agent details
+   - Review "Top Actions"
+   - Check "Cost Breakdown"
+   - Look for optimization opportunities
+4. Compare with similar agents:
+   - Why is Agent A 3x more expensive than Agent B?
+   - Different usage patterns?
+   - Different action mix?
+   - Bugs or inefficiencies?
+
+### Track optimization impact
+
+1. Note current "Avg Cost per Action" before optimization
+2. Implement optimization (e.g., use cheaper model)
+3. Wait 24 hours
+4. Return to Analytics page
+5. Compare "Avg Cost per Action"
+6. Calculate savings:
+   ```
+   Daily savings = (Old avg - New avg) × Daily actions
+   Monthly projection = Daily savings × 30
+   ```
+7. Document successful optimizations
+
+### Budget planning
+
+1. Select "Last 30 days"
+2. Note "Total Consumption"
+3. Check "Projected monthly" estimate
+4. Review "Cost by Agent" to allocate budgets
+5. Set per-agent budgets in Settings → Policies
+6. Monitor adherence in future periods
+
+### Identify usage patterns
+
+1. View "Actions over time" chart
+2. Look for patterns:
+   - Peak usage times (optimize for these)
+   - Weekend vs weekday differences
+   - Growth trends (plan capacity)
+   - Seasonal variations
+3. Adjust:
+   - Scale infrastructure for peaks
+   - Budget for expected growth
+   - Implement rate limiting during peaks
+
+## Export and reporting
+
+### Export charts
+
+Click **Export** on any chart:
+- PNG image - For presentations
+- CSV data - For analysis
+- PDF report - For stakeholders
+
+### Scheduled reports (future)
+
+**Coming soon**: Automated reports:
+- Daily cost summary (email)
+- Weekly trends analysis (email + Slack)
+- Monthly executive summary (PDF)
+
+## Best practices
+
+<Tip>
+**Review analytics weekly**: Set a recurring calendar reminder to review analytics every Monday.
+</Tip>
+
+<Tip>
+**Act on recommendations**: The AI suggestions are based on real data - implementing them can save 20-40% on costs.
+</Tip>
+
+<Warning>
+**Spikes need investigation**: Any day with > 2x average cost should be investigated immediately to prevent runaway costs.
+</Warning>
+
+<Tip>
+**Compare periods**: Always use the period comparison (vs previous 30 days) to understand if you're improving or regressing.
+</Tip>
+
+<Tip>
+**Focus on top 20%**: Usually 20% of actions account for 80% of costs - optimize these first.
+</Tip>
+
+## Keyboard shortcuts
+
+- `1` - Switch to 24h view
+- `7` - Switch to 7d view
+- `3` - Switch to 30d view
+- `a` - Switch to all time view
+- `e` - Export current view
+
+## Troubleshooting
+
+### "Charts not loading"
+
+- Check time window selector
+- Verify you have runs in selected period
+- Refresh page
+- Try shorter time window
+
+### "No data for selected period"
+
+- Extend time window (try "All time")
+- Check if any runs exist (Runs page)
+- Verify agent is sending data
+
+### "Cost seems wrong"
+
+- Check if multiple agents are included
+- Verify time window is correct
+- Review Activity Ledger for source data
+- Check for currency/timezone mismatches
+
+### "Recommendations not showing"
+
+- Recommendations appear after 7+ days of data
+- Need minimum 100 actions for analysis
+- Some patterns need 30 days to detect
+
+## See also
+
+- [Platform Stats API](/platform/stats) - API documentation
+- [Activity Ledger](/console/ledger) - Drill into specific actions
+- [Agents](/console/agents) - Per-agent cost breakdown
+- [Settings](/console/settings) - Configure budget policies

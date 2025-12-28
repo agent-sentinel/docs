@@ -1,0 +1,219 @@
+---
+title: "Agent Discovery"
+description: "Automatic agent registration and metrics tracking in the platform."
+---
+
+## Overview
+
+The Agent Discovery service **automatically registers and tracks agents** as they send telemetry to the platform. No manual configuration required - agents are discovered from run data and enriched with real-time metrics.
+
+## Automatic registration
+
+When an agent sends its first run via the ingest endpoint, the platform automatically:
+
+1. Creates an agent record with `agent_id` from the run
+2. Tracks first seen and last seen timestamps
+3. Begins calculating metrics (runs, actions, costs, success rates)
+4. Monitors intervention and approval rates
+
+## Agent endpoints
+
+### List agents
+
+```bash
+GET /api/v1/agents
+```
+
+**Query parameters:**
+- `agent_id` (optional): Filter by agent ID (partial match)
+- `sort_by` (optional): Sort field - `last_seen`, `first_seen`, `total_runs`, `total_cost`, `intervention_rate`
+- `sort_order` (optional): `asc` or `desc` (default: `desc`)
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/agents?sort_by=total_cost&sort_order=desc"
+```
+
+**Response:**
+```json
+{
+  "agents": [
+    {
+      "agent_id": "trading-bot",
+      "display_name": "Trading Bot",
+      "description": "Automated trading agent",
+      "organization_id": "org_123",
+      "first_seen": "2024-12-01T10:00:00Z",
+      "last_seen": "2024-12-28T14:30:00Z",
+      "total_runs": 1234,
+      "total_actions": 45678,
+      "total_cost_usd": 567.89,
+      "success_rate": 0.95,
+      "intervention_rate": 0.02,
+      "is_active": true,
+      "created_at": "2024-12-01T10:00:00Z",
+      "updated_at": "2024-12-28T14:30:00Z"
+    }
+  ]
+}
+```
+
+### Get agent details
+
+```bash
+GET /api/v1/agents/{agent_id}
+```
+
+Returns detailed agent information including calculated metrics.
+
+### Get agent statistics
+
+```bash
+GET /api/v1/agents/{agent_id}/stats
+```
+
+Returns comprehensive statistics:
+
+```json
+{
+  "agent_id": "trading-bot",
+  "display_name": "Trading Bot",
+  "description": "Automated trading agent",
+  "total_runs": 1234,
+  "total_actions": 45678,
+  "total_cost_usd": 567.89,
+  "success_rate": 0.95,
+  "avg_cost_per_run": 0.46,
+  "avg_actions_per_run": 37.0,
+  "intervention_rate": 0.02,
+  "interventions_count": 912,
+  "approval_metrics": {
+    "total_approvals": 45,
+    "pending_approvals": 2,
+    "approval_rate": 0.89,
+    "avg_decision_time_seconds": 180.5
+  },
+  "recent_activity": {
+    "last_24h": {
+      "runs": 48,
+      "actions": 1776,
+      "cost_usd": 22.34
+    },
+    "last_7d": {
+      "runs": 334,
+      "actions": 12358,
+      "cost_usd": 154.89
+    },
+    "last_30d": {
+      "runs": 1234,
+      "actions": 45678,
+      "cost_usd": 567.89
+    }
+  },
+  "days_active": 28,
+  "first_seen": "2024-12-01T10:00:00Z",
+  "last_seen": "2024-12-28T14:30:00Z"
+}
+```
+
+### Update agent metadata
+
+```bash
+PATCH /api/v1/agents/{agent_id}
+```
+
+Update display name and description (agents cannot be manually created or deleted):
+
+```bash
+curl -X PATCH \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "display_name": "Production Trading Bot",
+    "description": "High-frequency trading agent for production environment"
+  }' \
+  "https://platform.agentsentinel.dev/api/v1/agents/trading-bot"
+```
+
+<Note>
+Only `display_name` and `description` can be updated. All other fields are automatically calculated from run data.
+</Note>
+
+## Calculated metrics
+
+The platform automatically calculates:
+
+### Activity metrics
+- **Total runs**: Count of all runs
+- **Total actions**: Count of all actions across runs
+- **Total cost**: Sum of costs (USD)
+- **Success rate**: Percentage of successful actions
+- **Average cost per run**: Mean cost per run
+- **Average actions per run**: Mean actions per run
+
+### Intervention metrics
+- **Intervention rate**: Percentage of actions that triggered interventions
+- **Interventions count**: Total number of interventions
+- **High-risk blocks**: Count of critical/high-risk interventions prevented
+
+### Approval metrics
+- **Total approvals**: Count of approval requests
+- **Pending approvals**: Currently pending approval requests
+- **Approval rate**: Percentage of approvals granted
+- **Average decision time**: Mean time to approve/reject (seconds)
+
+### Recent activity
+- **Last 24 hours**: Runs, actions, cost
+- **Last 7 days**: Runs, actions, cost
+- **Last 30 days**: Runs, actions, cost
+
+### Temporal data
+- **Days active**: Count of unique days with activity
+- **First seen**: Timestamp of first run
+- **Last seen**: Timestamp of most recent run
+
+## Filtering agents in the UI
+
+In the web console, navigate to **Agents** page to:
+
+- View all discovered agents
+- Sort by activity, cost, or intervention rate
+- Click an agent to see detailed statistics
+- Edit display name and description
+- View recent runs for an agent
+- Link to agent's actions in Activity Ledger
+
+## Agent scoping
+
+Agents are scoped to organizations - each organization sees only their agents. Use the agent discovery system to:
+
+- Monitor agent performance across your fleet
+- Identify high-cost agents
+- Track agents with high intervention rates (indicating policy issues)
+- Analyze approval patterns by agent
+
+## Best practices
+
+<Tip>
+**Use meaningful agent_id values**: Agent IDs should be descriptive and unique (e.g., "trading-bot-prod", "customer-support-agent-v2").
+</Tip>
+
+<Tip>
+**Add display names**: Update agents with human-readable display names and descriptions for easier identification in the UI.
+</Tip>
+
+<Tip>
+**Monitor intervention rates**: High intervention rates indicate agents attempting actions blocked by policies - review and adjust either agent logic or policies.
+</Tip>
+
+<Warning>
+**Agent IDs cannot be changed**: Once an agent sends its first run, its `agent_id` is permanent. Plan your naming scheme carefully.
+</Warning>
+
+## See also
+
+- [Runs](/platform/runs) - View runs by agent
+- [Activity Ledger](/platform/ledger) - Filter actions by agent_id
+- [Interventions](/platform/interventions) - Track policy enforcement by agent
+- [Approvals](/platform/approvals) - View approval requests by agent

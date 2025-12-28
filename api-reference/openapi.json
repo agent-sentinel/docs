@@ -11,7 +11,7 @@
           "login"
         ],
         "summary": "Login Access Token",
-        "description": "OAuth2 compatible token login, get an access token for future requests",
+        "description": "OAuth2 compatible token login, get an access token for future requests.\n\nToken is stored in HTTP-only secure cookie, inaccessible to JavaScript.\nCSRF token is provided in a separate accessible cookie.",
         "operationId": "login-login_access_token",
         "requestBody": {
           "content": {
@@ -28,9 +28,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Token"
-                }
+                "schema": {}
               }
             }
           },
@@ -47,13 +45,33 @@
         }
       }
     },
+    "/api/v1/logout": {
+      "post": {
+        "tags": [
+          "login"
+        ],
+        "summary": "Logout",
+        "description": "Logout endpoint - clears authentication cookies.",
+        "operationId": "login-logout",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/login/test-token": {
       "post": {
         "tags": [
           "login"
         ],
         "summary": "Test Token",
-        "description": "Test access token",
+        "description": "Test access token / Validate session",
         "operationId": "login-test_token",
         "responses": {
           "200": {
@@ -66,12 +84,29 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "login"
+        ],
+        "summary": "Get Current User Info",
+        "description": "Get current authenticated user information",
+        "operationId": "login-get_current_user_info",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            }
           }
-        ]
+        }
       }
     },
     "/api/v1/password-recovery/{email}": {
@@ -167,11 +202,6 @@
         "summary": "Recover Password Html Content",
         "description": "HTML Content for Password Recovery",
         "operationId": "login-recover_password_html_content",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "email",
@@ -215,11 +245,6 @@
         "summary": "Read Users",
         "description": "Retrieve users.",
         "operationId": "users-read_users",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "skip",
@@ -272,11 +297,6 @@
         "summary": "Create User",
         "description": "Create new user.",
         "operationId": "users-create_user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -330,12 +350,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       },
       "delete": {
         "tags": [
@@ -355,12 +370,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       },
       "patch": {
         "tags": [
@@ -400,12 +410,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/users/me/password": {
@@ -447,12 +452,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/users/signup": {
@@ -505,11 +505,6 @@
         "summary": "Read User By Id",
         "description": "Get a specific user by id.",
         "operationId": "users-read_user_by_id",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "user_id",
@@ -552,11 +547,6 @@
         "summary": "Update User",
         "description": "Update a user.",
         "operationId": "users-update_user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "user_id",
@@ -609,11 +599,6 @@
         "summary": "Delete User",
         "description": "Delete a user.",
         "operationId": "users-delete_user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "user_id",
@@ -658,11 +643,6 @@
         "summary": "Test Email",
         "description": "Test emails.",
         "operationId": "utils-test_email",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "email_to",
@@ -721,7 +701,7 @@
         }
       }
     },
-    "/api/v1/items/": {
+    "/api/v1/items": {
       "get": {
         "tags": [
           "items"
@@ -729,11 +709,6 @@
         "summary": "Read Items",
         "description": "Retrieve items.",
         "operationId": "items-read_items",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "skip",
@@ -786,11 +761,6 @@
         "summary": "Create Item",
         "description": "Create new item.",
         "operationId": "items-create_item",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -833,11 +803,6 @@
         "summary": "Read Item",
         "description": "Get item by ID.",
         "operationId": "items-read_item",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "id",
@@ -880,11 +845,6 @@
         "summary": "Update Item",
         "description": "Update an item.",
         "operationId": "items-update_item",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "id",
@@ -937,11 +897,6 @@
         "summary": "Delete Item",
         "description": "Delete an item.",
         "operationId": "items-delete_item",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "id",
@@ -978,13 +933,13 @@
         }
       }
     },
-    "/api/v1/ingest/": {
+    "/api/v1/ingest": {
       "post": {
         "tags": [
           "ingest"
         ],
         "summary": "Ingest Logs",
-        "description": "Ingest agent logs from SDK.\n\nCreates or updates a Run and adds Actions to it.\nReturns 202 Accepted to indicate async processing (though currently sync).\n\nThe SDK sends batches of log entries periodically. Each batch belongs\nto a single run. If the run doesn't exist, it's created. Actions are\nadded and the run's total cost is updated.\n\nArgs:\n    payload: Batch of log entries with run_id\n    session: Database session\n    current_user: Authenticated user (from JWT or API key)\n\nReturns:\n    IngestResponse with status and counts\n    \nRaises:\n    HTTPException: If run_id format is invalid or DB error occurs",
+        "description": "Ingest agent logs from SDK.\n\nCreates or updates a Run and adds Actions to it.\nReturns 202 Accepted to indicate async processing (though currently sync).\nBroadcasts real-time events to connected WebSocket clients.\n\nThe SDK sends batches of log entries periodically. Each batch belongs\nto a single run. If the run doesn't exist, it's created. Actions are\nadded and the run's total cost is updated.\n\nArgs:\n    payload: Batch of log entries with run_id\n    session: Database session\n    current_user: Authenticated user (from JWT or API key)\n    request: HTTP request object for rate limiting\n\nReturns:\n    IngestResponse with status and counts\n    \nRaises:\n    HTTPException: If run_id format is invalid or DB error occurs",
         "operationId": "ingest-ingest_logs",
         "parameters": [
           {
@@ -1064,7 +1019,7 @@
         }
       }
     },
-    "/api/v1/runs/": {
+    "/api/v1/runs": {
       "get": {
         "tags": [
           "runs"
@@ -1072,11 +1027,6 @@
         "summary": "List Runs",
         "description": "List all runs for the current user.\n\nReturns paginated list of runs with their metadata (but not actions).\nUse GET /runs/{run_id} to get full run details with actions.",
         "operationId": "runs-list_runs",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "skip",
@@ -1129,6 +1079,22 @@
               ],
               "title": "Min Cost"
             }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
           }
         ],
         "responses": {
@@ -1163,11 +1129,6 @@
         "summary": "Get Run",
         "description": "Get a specific run by ID with all its actions.\n\nReturns the run metadata plus all associated actions.",
         "operationId": "runs-get_run",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -1212,11 +1173,6 @@
         "summary": "Get Run Actions",
         "description": "Get all actions for a specific run.\n\nReturns paginated list of actions for the run.",
         "operationId": "runs-get_run_actions",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -1273,7 +1229,505 @@
         }
       }
     },
-    "/api/v1/stats/": {
+    "/api/v1/ledger": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Get Ledger",
+        "description": "Get the Activity Ledger - a chronological, filterable list of ALL actions.\n\nThis is the immutable audit trail for compliance and debugging.\nUnlike /runs endpoints which are hierarchical, this provides a flat\nview of every action ever taken by the user's agents.\n\nKey use cases:\n- Compliance audits: \"Show me all high-risk actions in Q4 2024\"\n- Debugging: \"Find all failed database_query actions\"\n- Cost analysis: \"What are my most expensive actions?\"\n- Security: \"Show all actions by agent_id 'prod-agent-3' that were blocked\"\n\nArgs:\n    session: Database session\n    current_user: Authenticated user\n    page: Page number (0-indexed)\n    page_size: Number of entries per page (max 1000)\n    outcome: Filter by outcome status\n    action_name: Filter by exact action name\n    agent_id: Filter by agent identifier\n    run_id: Filter by parent run\n    min_cost: Minimum cost threshold\n    max_cost: Maximum cost threshold\n    start_date: Filter actions after this date\n    end_date: Filter actions before this date\n    search: Full-text search across name, agent_id, outcome\n    sort_by: Field to sort results by\n    sort_order: Sort direction (asc/desc)\n\nReturns:\n    LedgerResponse with paginated entries and metadata",
+        "operationId": "ledger-get_ledger",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Page number (0-indexed)",
+              "default": 0,
+              "title": "Page"
+            },
+            "description": "Page number (0-indexed)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 100,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by outcome (success, error, blocked)",
+              "title": "Outcome"
+            },
+            "description": "Filter by outcome (success, error, blocked)"
+          },
+          {
+            "name": "action_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by exact action name",
+              "title": "Action Name"
+            },
+            "description": "Filter by exact action name"
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by agent ID",
+              "title": "Agent Id"
+            },
+            "description": "Filter by agent ID"
+          },
+          {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by run ID",
+              "title": "Run Id"
+            },
+            "description": "Filter by run ID"
+          },
+          {
+            "name": "min_cost",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum cost filter",
+              "title": "Min Cost"
+            },
+            "description": "Minimum cost filter"
+          },
+          {
+            "name": "max_cost",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum cost filter",
+              "title": "Max Cost"
+            },
+            "description": "Maximum cost filter"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (ISO 8601)",
+              "title": "Start Date"
+            },
+            "description": "Start date (ISO 8601)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (ISO 8601)",
+              "title": "End Date"
+            },
+            "description": "End date (ISO 8601)"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search in action names, agent IDs, outcomes",
+              "title": "Search"
+            },
+            "description": "Search in action names, agent IDs, outcomes"
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "timestamp",
+                "cost",
+                "duration",
+                "name"
+              ],
+              "type": "string",
+              "description": "Field to sort by",
+              "default": "timestamp",
+              "title": "Sort By"
+            },
+            "description": "Field to sort by"
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Sort order",
+              "default": "desc",
+              "title": "Sort Order"
+            },
+            "description": "Sort order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/stats": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Get Ledger Stats",
+        "description": "Get aggregate statistics for the Activity Ledger.\n\nProvides high-level metrics for dashboards and compliance reports.\nRespects the same access control as the main ledger endpoint.\n\nArgs:\n    session: Database session\n    current_user: Authenticated user\n    start_date: Optional date range start\n    end_date: Optional date range end\n    agent_id: Optional agent filter\n\nReturns:\n    LedgerStats with aggregate metrics",
+        "operationId": "ledger-get_ledger_stats",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date for stats calculation",
+              "title": "Start Date"
+            },
+            "description": "Start date for stats calculation"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date for stats calculation",
+              "title": "End Date"
+            },
+            "description": "End date for stats calculation"
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Calculate stats for specific agent",
+              "title": "Agent Id"
+            },
+            "description": "Calculate stats for specific agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/export": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Export Ledger",
+        "description": "Export ledger data for compliance audits and offline analysis.\n\nSupports multiple formats:\n- JSONL: One JSON object per line (same as SDK local ledger format)\n- JSON: Array of objects\n- CSV: Tabular format (inputs/outputs as JSON strings)\n\nThis endpoint is rate-limited to prevent abuse. For large exports,\ncontact support for bulk data access.\n\nArgs:\n    session: Database session\n    current_user: Authenticated user\n    format: Export format (json, csv, jsonl)\n    outcome: Filter by outcome\n    action_name: Filter by action name\n    agent_id: Filter by agent\n    start_date: Date range start\n    end_date: Date range end\n    limit: Maximum number of records (max 100k)\n\nReturns:\n    File download with requested format",
+        "operationId": "ledger-export_ledger",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "json",
+                "csv",
+                "jsonl"
+              ],
+              "type": "string",
+              "description": "Export format",
+              "default": "jsonl",
+              "title": "Format"
+            },
+            "description": "Export format"
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "name": "action_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Name"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "description": "Maximum records to export",
+              "default": 10000,
+              "title": "Limit"
+            },
+            "description": "Maximum records to export"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Ledger-Export Ledger"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
       "get": {
         "tags": [
           "stats"
@@ -1281,11 +1735,6 @@
         "summary": "Get Stats",
         "description": "Get aggregate statistics for the current user.\n\nArgs:\n    session: Database session\n    current_user: Currently authenticated user\n    days: Number of days to look back (e.g., 1 for 24h)\n    \nReturns:\n    - total_runs: Total number of runs\n    - total_actions: Total number of actions across all runs\n    - total_cost_usd: Sum of all action costs\n    - successful_actions: Count of successful actions\n    - failed_actions: Count of failed actions\n    - avg_cost_per_action: Average cost per action\n    - avg_duration_ms: Average duration per action",
         "operationId": "stats-get_stats",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "days",
@@ -1334,32 +1783,55 @@
           "stats"
         ],
         "summary": "Get Daily Stats",
-        "description": "Get daily cost and run count for the last 30 days.",
+        "description": "Get daily cost and run count, with pagination.\n\nArgs:\n    skip: Number of days to skip (pagination offset)\n    limit: Maximum number of days to return (default 30, max 365)",
         "operationId": "stats-get_daily_stats",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DailyStats"
-                  },
-                  "type": "array",
-                  "title": "Response Stats-Get Daily Stats"
+                  "$ref": "#/components/schemas/DailyStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/v1/api-keys/": {
+    "/api/v1/api-keys": {
       "get": {
         "tags": [
           "api-keys"
@@ -1367,11 +1839,6 @@
         "summary": "List Api Keys",
         "description": "List all API keys for the current user.\n\nNote: The actual key values are never returned after creation.\nOnly key prefixes are shown for identification.",
         "operationId": "api-keys-list_api_keys",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "skip",
@@ -1424,11 +1891,6 @@
         "summary": "Create Api Key",
         "description": "Create a new API key.\n\n**IMPORTANT**: The API key is only shown ONCE at creation time.\nStore it securely - you won't be able to retrieve it again.\n\nThe key will be hashed before storage for security.",
         "operationId": "api-keys-create_api_key",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1471,11 +1933,6 @@
         "summary": "Get Api Key",
         "description": "Get details about a specific API key.\n\nNote: The actual key value is never returned.\nOnly metadata like name, status, and usage info.",
         "operationId": "api-keys-get_api_key",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "key_id",
@@ -1518,11 +1975,6 @@
         "summary": "Delete Api Key",
         "description": "Delete (revoke) an API key.\n\nThis permanently removes the key. Any SDK using this key\nwill no longer be able to authenticate.",
         "operationId": "api-keys-delete_api_key",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "key_id",
@@ -1567,11 +2019,6 @@
         "summary": "Deactivate Api Key",
         "description": "Deactivate an API key without deleting it.\n\nThe key can be reactivated later if needed.",
         "operationId": "api-keys-deactivate_api_key",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "key_id",
@@ -1616,11 +2063,6 @@
         "summary": "Activate Api Key",
         "description": "Reactivate a previously deactivated API key.",
         "operationId": "api-keys-activate_api_key",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "key_id",
@@ -1657,7 +2099,7 @@
         }
       }
     },
-    "/api/v1/policies/": {
+    "/api/v1/policies": {
       "post": {
         "tags": [
           "policies"
@@ -1665,11 +2107,6 @@
         "summary": "Create Policy",
         "description": "Create a new policy.",
         "operationId": "policies-create_policy",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1710,11 +2147,6 @@
         "summary": "List Policies",
         "description": "List all policies for the current user.\n\nArgs:\n    skip: Number of policies to skip (pagination)\n    limit: Maximum number of policies to return\n    enabled_only: If True, only return enabled policies",
         "operationId": "policies-list_policies",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "skip",
@@ -1807,11 +2239,6 @@
         "summary": "Sync Policies",
         "description": "Get all applicable policies for SDK synchronization.\n\nThis endpoint returns policies in order of precedence:\n1. Run-specific policies (if run_id provided)\n2. Agent-specific policies (if agent_id provided)\n3. Global policies\n\nThe SDK should apply them in this order, with more specific policies\noverriding general ones.\n\nArgs:\n    agent_id: Optional agent identifier to get agent-specific policies\n    run_id: Optional run identifier to get run-specific policies",
         "operationId": "policies-sync_policies",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "agent_id",
@@ -1882,11 +2309,6 @@
         "summary": "Get Policy",
         "description": "Get a specific policy by ID.",
         "operationId": "policies-get_policy",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "policy_id",
@@ -1929,11 +2351,6 @@
         "summary": "Update Policy",
         "description": "Update a policy.",
         "operationId": "policies-update_policy",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "policy_id",
@@ -1986,11 +2403,6 @@
         "summary": "Delete Policy",
         "description": "Delete a policy.",
         "operationId": "policies-delete_policy",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "policy_id",
@@ -2020,6 +2432,62 @@
         }
       }
     },
+    "/api/v1/policies/{policy_id}/test-alert": {
+      "post": {
+        "tags": [
+          "policies"
+        ],
+        "summary": "Test Policy Alert",
+        "description": "Send a test alert email for a policy.\n\nThis endpoint is useful for testing email alert configuration before\nsetting up real budget monitoring.\n\nArgs:\n    policy_id: ID of the policy\n    request_data: Test alert configuration including:\n        - alert_type: \"threshold\" or \"exceeded\"\n        - budget_type: \"run\", \"session\", or \"action\"\n        - test_email: Optional email override (default uses policy alert_emails)\n        - current_spending: Simulated current spending\n        - budget_limit: Simulated budget limit\n\nReturns:\n    Status of alert sending attempt",
+        "operationId": "policies-test_policy_alert",
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Policy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Policies-Test Policy Alert"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/replay/{run_id}": {
       "post": {
         "tags": [
@@ -2028,11 +2496,6 @@
         "summary": "Replay Run",
         "description": "Replay a specific run by comparing recorded inputs/outputs.\n\nThis endpoint:\n1. Fetches all actions from the original run\n2. Simulates replay by checking input/output consistency\n3. Detects divergences (non-deterministic behavior)\n4. Returns comparison results\n\nNote: This is a simulation endpoint. Actual replay execution\nshould be done client-side using the SDK's ReplayMode.\n\nArgs:\n    run_id: UUID of the run to replay\n    strict: If True, report all divergences as errors\n    warn_on_divergence: If True, include divergence details\n    \nReturns:\n    ReplayResult with comparison data",
         "operationId": "replay-replay_run",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -2097,11 +2560,6 @@
         "summary": "Get Replay Comparison",
         "description": "Get a comparison between original run and its replay.\n\nThis endpoint fetches both the original run and any replay results,\nproviding a side-by-side comparison for analysis.\n\nArgs:\n    run_id: UUID of the original run\n    \nReturns:\n    ReplayComparison with full comparison data",
         "operationId": "replay-get_replay_comparison",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -2144,13 +2602,8 @@
           "replay"
         ],
         "summary": "Get Replay History",
-        "description": "Get replay history for a specific run.\n\nReturns a list of all replay attempts for this run,\nuseful for tracking how behavior changes over time.\n\nArgs:\n    run_id: UUID of the original run\n    limit: Maximum number of replay results to return\n    \nReturns:\n    List of ReplayResult objects",
+        "description": "Get replay history for a specific run.\n\nReturns a paginated list of all replay attempts for this run,\nuseful for tracking how behavior changes over time.\n\nArgs:\n    run_id: UUID of the original run\n    skip: Number of results to skip (pagination offset)\n    limit: Maximum number of replay results to return (max 100)\n    \nReturns:\n    List of ReplayResult objects",
         "operationId": "replay-get_replay_history",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -2160,6 +2613,16 @@
               "type": "string",
               "format": "uuid",
               "title": "Run Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
             }
           },
           {
@@ -2209,11 +2672,6 @@
         "summary": "Analyze Determinism",
         "description": "Analyze a run for potential non-deterministic behavior.\n\nThis endpoint examines actions to identify patterns that\nmight indicate non-deterministic behavior, such as:\n- Timestamp dependencies\n- Random number generation\n- UUID generation\n- External API calls with varying responses\n\nArgs:\n    run_id: UUID of the run to analyze\n    \nReturns:\n    Analysis results with recommendations",
         "operationId": "replay-analyze_determinism",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "run_id",
@@ -2269,12 +2727,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/compliance/export": {
@@ -2316,12 +2769,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/compliance/oversight": {
@@ -2332,11 +2780,6 @@
         "summary": "Get Oversight Log",
         "description": "Get human oversight log (Article 14 compliance).\n\n**Enterprise Tier Required**\n\nReturns paginated list of actions that required human approval.",
         "operationId": "compliance-get_oversight_log",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
         "parameters": [
           {
             "name": "limit",
@@ -2367,11 +2810,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/OversightLogEntry"
-                  },
-                  "title": "Response Compliance-Get Oversight Log"
+                  "$ref": "#/components/schemas/OversightLogsResponse"
                 }
               }
             }
@@ -2382,6 +2821,1629 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/tools": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "List Mcp Tools",
+        "description": "List all available MCP tools.\n\nMCP tools are callable functions that LLMs can invoke to interact\nwith AgentSentinel's features (policies, runs, approvals, etc).\n\nReturns:\n    List of available tools with their schemas",
+        "operationId": "mcp-list_mcp_tools",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPToolsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/resources": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "List Mcp Resources",
+        "description": "List all available MCP resources.\n\nMCP resources are read-only data sources that LLMs can query\n(latest runs, pending approvals, stats, etc).\n\nReturns:\n    List of available resources with their URIs",
+        "operationId": "mcp-list_mcp_resources",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPResourcesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/prompts": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "List Mcp Prompts",
+        "description": "List all available MCP prompt templates.\n\nMCP prompts are pre-defined workflows that help LLMs accomplish\ncommon tasks (creating policies, analyzing costs, reviewing approvals).\n\nReturns:\n    List of available prompt templates",
+        "operationId": "mcp-list_mcp_prompts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPPromptsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/call": {
+      "post": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Call Mcp Tool",
+        "description": "Execute an MCP tool call.\n\nThis is the main endpoint for LLMs to interact with AgentSentinel.\nThe LLM selects a tool, provides arguments, and receives structured results.\n\nExample:\n    ```\n    POST /api/v1/mcp/call\n    {\n        \"tool_name\": \"create_policy\",\n        \"arguments\": {\n            \"name\": \"Production Limits\",\n            \"run_budget\": 5.0,\n            \"enabled\": true\n        }\n    }\n    ```\n\nArgs:\n    request: Tool call request with tool name and arguments\n    \nReturns:\n    Tool execution result with success status and data/error",
+        "operationId": "mcp-call_mcp_tool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MCPToolCallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPToolCallResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/resources/{resource_uri}": {
+      "get": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Get Mcp Resource",
+        "description": "Get data from an MCP resource by URI.\n\nResources are read-only data sources (e.g., agentsentinel://runs/latest)\nthat LLMs can query for information.\n\nArgs:\n    resource_uri: The resource URI (e.g., \"agentsentinel://runs/latest\")\n    \nReturns:\n    Resource data in appropriate format",
+        "operationId": "mcp-get_mcp_resource",
+        "parameters": [
+          {
+            "name": "resource_uri",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Resource Uri"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCPResourceDataResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/mcp/prompts/{prompt_name}": {
+      "post": {
+        "tags": [
+          "mcp"
+        ],
+        "summary": "Execute Mcp Prompt",
+        "description": "Execute an MCP prompt template.\n\nPrompts are pre-defined workflows that guide LLMs through common tasks.\n\nArgs:\n    prompt_name: Name of the prompt template\n    arguments: Prompt-specific arguments\n    \nReturns:\n    Prompt execution result",
+        "operationId": "mcp-execute_mcp_prompt",
+        "parameters": [
+          {
+            "name": "prompt_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Arguments"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Mcp-Execute Mcp Prompt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Create Approval Request",
+        "description": "Create a new approval request.\n\nThis endpoint is called by the SDK when an action requires human approval.\nThe approval request is stored and can be viewed/actioned via the web UI.\n\nArgs:\n    request_data: Approval request details including action name, inputs, cost, etc.\n\nReturns:\n    Created approval request with ID for polling",
+        "operationId": "approvals-create_approval_request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Approvals",
+        "description": "List approval requests for the current user.\n\nBy default, returns all non-expired approvals ordered by priority and recency.\nUse filters to narrow down the list.\n\nArgs:\n    skip: Pagination offset\n    limit: Maximum results (max 200)\n    status: Filter by approval status\n    priority: Filter by priority level\n    risk_level: Filter by risk level\n    agent_id: Filter by agent ID\n    include_expired: Include expired requests\n\nReturns:\n    Paginated list of approval requests",
+        "operationId": "approvals-list_approvals",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ApprovalStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ApprovalPriority"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk Level"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "include_expired",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Expired"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestsPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/pending": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Pending Approvals",
+        "description": "List only pending approval requests (convenience endpoint).\n\nReturns non-expired pending approvals ordered by priority (critical first)\nand creation time (newest first).",
+        "operationId": "approvals-list_pending_approvals",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ApprovalPriority"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk Level"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestsPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/stats": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Get Approval Stats",
+        "description": "Get approval statistics for the current user.\n\nReturns counts by status, priority, and risk level, as well as\naverage decision time.",
+        "operationId": "approvals-get_approval_stats",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Get Approval",
+        "description": "Get a specific approval request by ID.",
+        "operationId": "approvals-get_approval",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/approve": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Approve Action",
+        "description": "Approve an action.\n\nMarks the approval request as approved, allowing the SDK to proceed\nwith the action. Optionally include notes for audit purposes.\n\nArgs:\n    approval_id: ID of the approval request\n    notes: Optional approval notes\n\nReturns:\n    Decision result including timestamp and callback status",
+        "operationId": "approvals-approve_action",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          },
+          {
+            "name": "notes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDecisionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/reject": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Reject Action",
+        "description": "Reject an action.\n\nMarks the approval request as rejected, preventing the SDK from\nexecuting the action. Include notes to explain the rejection reason.\n\nArgs:\n    approval_id: ID of the approval request\n    notes: Optional rejection reason\n\nReturns:\n    Decision result including timestamp and callback status",
+        "operationId": "approvals-reject_action",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          },
+          {
+            "name": "notes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDecisionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/request-info": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Request More Info",
+        "description": "Request more information before making a decision.\n\nSets the approval to \"info_requested\" status and includes a message\nfor the agent/operator to respond to.\n\nArgs:\n    approval_id: ID of the approval request\n    message: Message describing what information is needed\n\nReturns:\n    Decision result with info_requested status",
+        "operationId": "approvals-request_more_info",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          },
+          {
+            "name": "message",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 2000,
+              "title": "Message"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDecisionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/respond": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Respond To Info Request",
+        "description": "Respond to an info request (from SDK/agent operator).\n\nSubmits the requested information and returns the approval request\nto pending status for the approver to review.\n\nArgs:\n    approval_id: ID of the approval request\n    response_data: Response containing the requested information\n\nReturns:\n    Updated approval request (now pending again)",
+        "operationId": "approvals-respond_to_info_request",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfoResponse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/poll": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Poll Approval Status",
+        "description": "Poll the status of an approval request.\n\nThis endpoint is used by the SDK to check if an approval has been\ngranted or denied. It returns minimal information optimized for polling.\n\nArgs:\n    approval_id: ID of the approval request\n\nReturns:\n    Current status and decision details (if decided)",
+        "operationId": "approvals-poll_approval_status",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalPollResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/cancel": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Cancel Approval Request",
+        "description": "Cancel a pending approval request (from SDK/agent operator).\n\nThis allows the agent to cancel an approval request if it's no longer\nneeded (e.g., user cancelled the operation, timeout in agent code).\n\nArgs:\n    approval_id: ID of the approval request\n\nReturns:\n    Updated approval request with cancelled status",
+        "operationId": "approvals-cancel_approval_request",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRequestPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/check": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Check Approval Required",
+        "description": "Check if an action requires approval (pre-flight check for SDK).\n\nThis allows the SDK to determine before execution whether an action\nwill require human approval, so it can submit the request proactively.\n\nArgs:\n    action_name: Name of the action to check\n    cost_usd: Estimated cost of the action\n    agent_id: Optional agent ID\n    run_id: Optional run ID\n\nReturns:\n    Dict indicating if approval is required and the triggering policy",
+        "operationId": "approvals-check_approval_required",
+        "parameters": [
+          {
+            "name": "action_name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Action Name"
+            }
+          },
+          {
+            "name": "cost_usd",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 0.0,
+              "title": "Cost Usd"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Approvals-Check Approval Required"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/health": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint for approval service.",
+        "operationId": "approvals-health_check",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Approvals-Health Check"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "List Agents",
+        "description": "List all discovered agents for the current user.\n\nArgs:\n    session: Database session\n    current_user: Currently authenticated user\n    skip: Pagination offset\n    limit: Maximum number of agents to return (max 100)\n    agent_id: Filter by agent_id (partial match)\n    organization_id: Filter by organization\n    sort_by: Field to sort by (last_seen, first_seen, total_runs, total_cost_usd, intervention_rate)\n    sort_order: Sort order (asc or desc)\n    \nReturns:\n    List of discovered agents with their metrics",
+        "operationId": "agents-list_agents",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(last_seen|first_seen|total_runs|total_cost_usd|intervention_rate)$",
+              "default": "last_seen",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentsPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{agent_id}": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Get Agent",
+        "description": "Get details for a specific agent.\n\nArgs:\n    session: Database session\n    current_user: Currently authenticated user\n    agent_id: Agent identifier\n    \nReturns:\n    Agent details with metrics",
+        "operationId": "agents-get_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Update Agent",
+        "description": "Update agent metadata (display_name, description only).\n\nNote: Agent metrics are calculated from runs/actions and cannot be manually edited.\n\nArgs:\n    session: Database session\n    current_user: Currently authenticated user\n    agent_id: Agent identifier\n    update_data: Fields to update\n    \nReturns:\n    Updated agent",
+        "operationId": "agents-update_agent",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{agent_id}/stats": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Get Agent Stats",
+        "description": "Get detailed statistics for a specific agent.\n\nThis endpoint calculates real-time metrics from runs, actions, and approvals.\n\nArgs:\n    session: Database session\n    current_user: Currently authenticated user\n    agent_id: Agent identifier\n    \nReturns:\n    Detailed agent statistics including:\n    - Activity metrics (runs, actions, costs)\n    - Success rates\n    - Intervention metrics\n    - Recent activity",
+        "operationId": "agents-get_agent_stats",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/interventions/": {
+      "get": {
+        "tags": [
+          "interventions"
+        ],
+        "summary": "List Interventions",
+        "description": "Retrieve interventions with filters.\n\nThis is the core view showing where Sentinel said \"no\", paused, or modified actions.",
+        "operationId": "interventions-list_interventions",
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "intervention_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InterventionType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Intervention Type"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InterventionOutcome"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "name": "action_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Name"
+            }
+          },
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "policy_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Policy Id"
+            }
+          },
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk Level"
+            }
+          },
+          {
+            "name": "from_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From Date"
+            }
+          },
+          {
+            "name": "to_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionsPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "interventions"
+        ],
+        "summary": "Create Intervention",
+        "description": "Create a new intervention record.\n\nThis is called by the SDK when it blocks, pauses, or modifies an action.",
+        "operationId": "interventions-create_intervention",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterventionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/interventions/stats": {
+      "get": {
+        "tags": [
+          "interventions"
+        ],
+        "summary": "Get Intervention Stats",
+        "description": "Get intervention statistics and metrics.\n\nThis shows the \"blast radius avoided\" and demonstrates platform value.",
+        "operationId": "interventions-get_intervention_stats",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "Number of days to analyze",
+              "default": 30,
+              "title": "Days"
+            },
+            "description": "Number of days to analyze"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionStats"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/interventions/{intervention_id}": {
+      "get": {
+        "tags": [
+          "interventions"
+        ],
+        "summary": "Get Intervention",
+        "description": "Get a specific intervention by ID.",
+        "operationId": "interventions-get_intervention",
+        "parameters": [
+          {
+            "name": "intervention_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intervention Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "interventions"
+        ],
+        "summary": "Delete Intervention",
+        "description": "Delete an intervention record.\n\nNote: This is for data management only. The historical record is valuable.",
+        "operationId": "interventions-delete_intervention",
+        "parameters": [
+          {
+            "name": "intervention_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Intervention Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Interventions-Delete Intervention"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/clerk": {
+      "post": {
+        "tags": [
+          "clerk-webhooks"
+        ],
+        "summary": "Handle Clerk Webhook",
+        "description": "Handle Clerk webhook events.\n\nSupports the following events:\n- user.created: Create a new user in our database\n- user.updated: Update existing user information\n- user.deleted: Deactivate user in our database (soft delete)\n- organization.created: Create a new organization\n- organization.updated: Update organization information\n- organization.deleted: Deactivate organization\n- organizationMembership.created: Add user to organization\n- organizationMembership.updated: Update user role in organization\n- organizationMembership.deleted: Remove user from organization\n\nArgs:\n    request: FastAPI request with webhook payload\n    session: Database session\n    \nReturns:\n    Success response\n    \nRaises:\n    HTTPException: If webhook verification fails or processing errors occur",
+        "operationId": "clerk-webhooks-handle_clerk_webhook",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Clerk-Webhooks-Handle Clerk Webhook"
                 }
               }
             }
@@ -2604,6 +4666,337 @@
         ],
         "title": "ActionsPublic"
       },
+      "AgentPublic": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Agent Id",
+            "description": "Agent identifier discovered from runtime"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "Human-readable name for the agent (optional)"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of agent purpose (optional)"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "total_runs": {
+            "type": "integer",
+            "title": "Total Runs"
+          },
+          "total_actions": {
+            "type": "integer",
+            "title": "Total Actions"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd"
+          },
+          "total_approvals_requested": {
+            "type": "integer",
+            "title": "Total Approvals Requested"
+          },
+          "total_approvals_rejected": {
+            "type": "integer",
+            "title": "Total Approvals Rejected"
+          },
+          "intervention_rate": {
+            "type": "number",
+            "title": "Intervention Rate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "id",
+          "owner_id",
+          "organization_id",
+          "first_seen",
+          "last_seen",
+          "total_runs",
+          "total_actions",
+          "total_cost_usd",
+          "total_approvals_requested",
+          "total_approvals_rejected",
+          "intervention_rate"
+        ],
+        "title": "AgentPublic",
+        "description": "Public schema for agent API responses."
+      },
+      "AgentStats": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "days_active": {
+            "type": "integer",
+            "title": "Days Active"
+          },
+          "total_runs": {
+            "type": "integer",
+            "title": "Total Runs"
+          },
+          "total_actions": {
+            "type": "integer",
+            "title": "Total Actions"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd"
+          },
+          "avg_cost_per_run": {
+            "type": "number",
+            "title": "Avg Cost Per Run"
+          },
+          "avg_cost_per_action": {
+            "type": "number",
+            "title": "Avg Cost Per Action"
+          },
+          "avg_actions_per_run": {
+            "type": "number",
+            "title": "Avg Actions Per Run"
+          },
+          "successful_actions": {
+            "type": "integer",
+            "title": "Successful Actions"
+          },
+          "failed_actions": {
+            "type": "integer",
+            "title": "Failed Actions"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "total_approvals_requested": {
+            "type": "integer",
+            "title": "Total Approvals Requested"
+          },
+          "total_approvals_approved": {
+            "type": "integer",
+            "title": "Total Approvals Approved"
+          },
+          "total_approvals_rejected": {
+            "type": "integer",
+            "title": "Total Approvals Rejected"
+          },
+          "total_approvals_timeout": {
+            "type": "integer",
+            "title": "Total Approvals Timeout"
+          },
+          "intervention_rate": {
+            "type": "number",
+            "title": "Intervention Rate"
+          },
+          "approval_rate": {
+            "type": "number",
+            "title": "Approval Rate"
+          },
+          "runs_last_24h": {
+            "type": "integer",
+            "title": "Runs Last 24H"
+          },
+          "runs_last_7d": {
+            "type": "integer",
+            "title": "Runs Last 7D"
+          },
+          "runs_last_30d": {
+            "type": "integer",
+            "title": "Runs Last 30D"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "display_name",
+          "first_seen",
+          "last_seen",
+          "days_active",
+          "total_runs",
+          "total_actions",
+          "total_cost_usd",
+          "avg_cost_per_run",
+          "avg_cost_per_action",
+          "avg_actions_per_run",
+          "successful_actions",
+          "failed_actions",
+          "success_rate",
+          "total_approvals_requested",
+          "total_approvals_approved",
+          "total_approvals_rejected",
+          "total_approvals_timeout",
+          "intervention_rate",
+          "approval_rate",
+          "runs_last_24h",
+          "runs_last_7d",
+          "runs_last_30d"
+        ],
+        "title": "AgentStats",
+        "description": "Detailed statistics for a single agent."
+      },
+      "AgentUpdateRequest": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "title": "AgentUpdateRequest",
+        "description": "Request to update agent metadata (display_name, description)."
+      },
+      "AgentsPublic": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AgentPublic"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "AgentsPublic",
+        "description": "Paginated response for agents list."
+      },
+      "AlertTestRequest": {
+        "properties": {
+          "alert_type": {
+            "type": "string",
+            "title": "Alert Type",
+            "default": "threshold"
+          },
+          "budget_type": {
+            "type": "string",
+            "title": "Budget Type",
+            "default": "run"
+          },
+          "test_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Email"
+          },
+          "current_spending": {
+            "type": "number",
+            "title": "Current Spending",
+            "default": 0.0
+          },
+          "budget_limit": {
+            "type": "number",
+            "title": "Budget Limit",
+            "default": 10.0
+          }
+        },
+        "type": "object",
+        "title": "AlertTestRequest",
+        "description": "Request schema for testing alert emails"
+      },
       "ApiKeyCreate": {
         "properties": {
           "name": {
@@ -2649,6 +5042,19 @@
             "format": "uuid",
             "title": "Owner Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization that owns this API key"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2664,7 +5070,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Used At"
+            "title": "Last Used At",
+            "description": "Last time this key was used"
           },
           "key_prefix": {
             "type": "string",
@@ -2678,7 +5085,6 @@
           "id",
           "owner_id",
           "created_at",
-          "last_used_at",
           "key_prefix"
         ],
         "title": "ApiKeyPublic"
@@ -2707,6 +5113,19 @@
             "format": "uuid",
             "title": "Owner Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization that owns this API key"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2722,7 +5141,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Used At"
+            "title": "Last Used At",
+            "description": "Last time this key was used"
           },
           "key_prefix": {
             "type": "string",
@@ -2741,7 +5161,6 @@
           "id",
           "owner_id",
           "created_at",
-          "last_used_at",
           "key_prefix",
           "key"
         ],
@@ -2767,6 +5186,558 @@
           "count"
         ],
         "title": "ApiKeysPublic"
+      },
+      "ApprovalDecisionResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "decided_by_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decided By Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "callback_sent": {
+            "type": "boolean",
+            "title": "Callback Sent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "decided_at",
+          "decided_by_id",
+          "notes",
+          "callback_sent"
+        ],
+        "title": "ApprovalDecisionResult",
+        "description": "Result of processing an approval decision."
+      },
+      "ApprovalPollResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Email"
+          },
+          "decision_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Notes"
+          },
+          "info_request_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Request Message"
+          },
+          "approved_with_modifications": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved With Modifications"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "decided_at",
+          "decided_by_email",
+          "decision_notes",
+          "info_request_message"
+        ],
+        "title": "ApprovalPollResponse",
+        "description": "Response for SDK polling an approval request status."
+      },
+      "ApprovalPriority": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high",
+          "critical"
+        ],
+        "title": "ApprovalPriority",
+        "description": "Priority level for approval requests."
+      },
+      "ApprovalRequestCreate": {
+        "properties": {
+          "action_name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Action Name"
+          },
+          "action_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Description"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "default": 0.0
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "default": "medium"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/ApprovalPriority",
+            "default": "medium"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "title": "Timeout Seconds",
+            "default": 3600
+          },
+          "action_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Inputs"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action_name"
+        ],
+        "title": "ApprovalRequestCreate",
+        "description": "Schema for creating an approval request (from SDK)."
+      },
+      "ApprovalRequestPublic": {
+        "properties": {
+          "action_name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Action Name"
+          },
+          "action_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Description"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "default": 0.0
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "default": "medium"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/ApprovalPriority",
+            "default": "medium"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus",
+            "default": "pending"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "title": "Timeout Seconds",
+            "description": "Time before request expires (default 1 hour)",
+            "default": 3600
+          },
+          "action_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Inputs"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context",
+            "description": "Additional context like policy name, reason for approval requirement"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Id"
+          },
+          "decision_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Notes"
+          },
+          "info_request_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Request Message"
+          },
+          "info_response": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Info Response"
+          }
+        },
+        "type": "object",
+        "required": [
+          "action_name",
+          "id",
+          "owner_id",
+          "organization_id",
+          "policy_id",
+          "created_at",
+          "expires_at",
+          "decided_at",
+          "decided_by_id",
+          "decision_notes",
+          "info_request_message",
+          "info_response"
+        ],
+        "title": "ApprovalRequestPublic",
+        "description": "Schema for returning approval requests via API."
+      },
+      "ApprovalRequestsPublic": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovalRequestPublic"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "ApprovalRequestsPublic",
+        "description": "Paginated list of approval requests."
+      },
+      "ApprovalStats": {
+        "properties": {
+          "total_pending": {
+            "type": "integer",
+            "title": "Total Pending"
+          },
+          "total_approved": {
+            "type": "integer",
+            "title": "Total Approved"
+          },
+          "total_rejected": {
+            "type": "integer",
+            "title": "Total Rejected"
+          },
+          "total_expired": {
+            "type": "integer",
+            "title": "Total Expired"
+          },
+          "total_info_requested": {
+            "type": "integer",
+            "title": "Total Info Requested"
+          },
+          "avg_decision_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Decision Time Seconds"
+          },
+          "pending_by_priority": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Pending By Priority"
+          },
+          "pending_by_risk": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Pending By Risk"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_pending",
+          "total_approved",
+          "total_rejected",
+          "total_expired",
+          "total_info_requested",
+          "avg_decision_time_seconds",
+          "pending_by_priority",
+          "pending_by_risk"
+        ],
+        "title": "ApprovalStats",
+        "description": "Statistics for approval requests."
+      },
+      "ApprovalStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected",
+          "expired",
+          "cancelled",
+          "info_requested"
+        ],
+        "title": "ApprovalStatus",
+        "description": "Status of an approval request."
       },
       "Body_login-login_access_token": {
         "properties": {
@@ -3094,6 +6065,28 @@
         ],
         "title": "DailyStats"
       },
+      "DailyStatsResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/DailyStats"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "DailyStatsResponse",
+        "description": "Paginated response for daily stats"
+      },
       "DivergenceDetail": {
         "properties": {
           "type": {
@@ -3183,12 +6176,39 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InfoResponse": {
+        "properties": {
+          "response": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Response"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response"
+        ],
+        "title": "InfoResponse",
+        "description": "Schema for responding to an info request."
+      },
       "IngestPayload": {
         "properties": {
           "run_id": {
             "type": "string",
             "title": "Run Id",
             "description": "UUID of the run"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Optional agent identifier for discovery"
           },
           "entries": {
             "items": {
@@ -3238,6 +6258,618 @@
         ],
         "title": "IngestResponse",
         "description": "Response after successful ingestion."
+      },
+      "InterventionCreate": {
+        "properties": {
+          "intervention_type": {
+            "$ref": "#/components/schemas/InterventionType"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/InterventionOutcome"
+          },
+          "action_name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Action Name"
+          },
+          "action_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Description"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "action_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Id"
+          },
+          "policy_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Name"
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "default": 0.0
+          },
+          "actual_cost": {
+            "type": "number",
+            "title": "Actual Cost",
+            "default": 0.0
+          },
+          "blast_radius": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blast Radius"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "agent_intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Intent"
+          },
+          "original_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Inputs"
+          },
+          "modified_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified Inputs"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "approval_request_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Request Id"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "default": "medium"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intervention_type",
+          "outcome",
+          "action_name"
+        ],
+        "title": "InterventionCreate",
+        "description": "Schema for creating an intervention (from SDK)."
+      },
+      "InterventionOutcome": {
+        "type": "string",
+        "enum": [
+          "blocked",
+          "escalated",
+          "approved_after_review",
+          "rejected_after_review",
+          "modified",
+          "warned"
+        ],
+        "title": "InterventionOutcome",
+        "description": "Final outcome of the intervention."
+      },
+      "InterventionPublic": {
+        "properties": {
+          "intervention_type": {
+            "$ref": "#/components/schemas/InterventionType"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/InterventionOutcome"
+          },
+          "action_name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Action Name"
+          },
+          "action_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Description"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "action_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Id"
+          },
+          "policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Id"
+          },
+          "policy_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Name"
+          },
+          "estimated_cost": {
+            "type": "number",
+            "title": "Estimated Cost",
+            "default": 0.0
+          },
+          "actual_cost": {
+            "type": "number",
+            "title": "Actual Cost",
+            "description": "Cost if action was eventually executed",
+            "default": 0.0
+          },
+          "blast_radius": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blast Radius",
+            "description": "What damage/impact was prevented (e.g., {'funds_protected': 1000, 'records_protected': 500})"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Human-readable reason for the intervention"
+          },
+          "agent_intent": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Intent",
+            "description": "What the agent was trying to accomplish"
+          },
+          "original_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Inputs"
+          },
+          "modified_inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified Inputs"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context",
+            "description": "Additional context like budget state, rate limit window, etc."
+          },
+          "approval_request_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Request Id",
+            "description": "Link to approval request if escalated"
+          },
+          "risk_level": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Risk Level",
+            "description": "Risk level: minimal, low, medium, high, critical",
+            "default": "medium"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intervention_type",
+          "outcome",
+          "action_name",
+          "id",
+          "owner_id",
+          "organization_id",
+          "created_at"
+        ],
+        "title": "InterventionPublic",
+        "description": "Schema for returning interventions via API."
+      },
+      "InterventionStats": {
+        "properties": {
+          "total_interventions": {
+            "type": "integer",
+            "title": "Total Interventions"
+          },
+          "hard_blocks": {
+            "type": "integer",
+            "title": "Hard Blocks"
+          },
+          "approval_escalations": {
+            "type": "integer",
+            "title": "Approval Escalations"
+          },
+          "rate_limits": {
+            "type": "integer",
+            "title": "Rate Limits"
+          },
+          "budget_blocks": {
+            "type": "integer",
+            "title": "Budget Blocks"
+          },
+          "downgrades": {
+            "type": "integer",
+            "title": "Downgrades"
+          },
+          "warnings": {
+            "type": "integer",
+            "title": "Warnings"
+          },
+          "blocked_count": {
+            "type": "integer",
+            "title": "Blocked Count"
+          },
+          "escalated_count": {
+            "type": "integer",
+            "title": "Escalated Count"
+          },
+          "approved_after_review_count": {
+            "type": "integer",
+            "title": "Approved After Review Count"
+          },
+          "rejected_after_review_count": {
+            "type": "integer",
+            "title": "Rejected After Review Count"
+          },
+          "modified_count": {
+            "type": "integer",
+            "title": "Modified Count"
+          },
+          "total_cost_prevented": {
+            "type": "number",
+            "title": "Total Cost Prevented"
+          },
+          "total_actions_blocked": {
+            "type": "integer",
+            "title": "Total Actions Blocked"
+          },
+          "high_risk_blocks": {
+            "type": "integer",
+            "title": "High Risk Blocks"
+          },
+          "interventions_by_day": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interventions By Day"
+          },
+          "interventions_by_type": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interventions By Type"
+          },
+          "top_blocked_actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Blocked Actions"
+          },
+          "top_policies": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Policies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_interventions",
+          "hard_blocks",
+          "approval_escalations",
+          "rate_limits",
+          "budget_blocks",
+          "downgrades",
+          "warnings",
+          "blocked_count",
+          "escalated_count",
+          "approved_after_review_count",
+          "rejected_after_review_count",
+          "modified_count",
+          "total_cost_prevented",
+          "total_actions_blocked",
+          "high_risk_blocks"
+        ],
+        "title": "InterventionStats",
+        "description": "Statistics for interventions - the core value metrics."
+      },
+      "InterventionType": {
+        "type": "string",
+        "enum": [
+          "hard_block",
+          "approval_required",
+          "rate_limited",
+          "budget_exceeded",
+          "downgrade",
+          "warning"
+        ],
+        "title": "InterventionType",
+        "description": "Type of intervention performed by Sentinel."
+      },
+      "InterventionsPublic": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/InterventionPublic"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "InterventionsPublic",
+        "description": "Paginated list of interventions."
       },
       "ItemCreate": {
         "properties": {
@@ -3357,6 +6989,229 @@
         ],
         "title": "ItemsPublic"
       },
+      "LedgerEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Unique action ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Action name (e.g., 'send_email', 'database_query')"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome",
+            "description": "'success', 'error', 'blocked', etc."
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "description": "Cost in USD"
+          },
+          "duration_ms": {
+            "type": "number",
+            "title": "Duration Ms",
+            "description": "Execution duration in milliseconds"
+          },
+          "inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputs",
+            "description": "Action inputs (arguments)"
+          },
+          "outputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputs",
+            "description": "Action outputs (return value)"
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id",
+            "description": "Parent run ID"
+          },
+          "run_status": {
+            "type": "string",
+            "title": "Run Status",
+            "description": "Run status at time of query"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Agent identifier"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "When the action occurred (inherited from run)"
+          },
+          "compliance_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compliance Metadata",
+            "description": "EU AI Act compliance data (approvals, rationale, etc.)"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization that owns this action"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "outcome",
+          "cost_usd",
+          "duration_ms",
+          "run_id",
+          "run_status",
+          "timestamp"
+        ],
+        "title": "LedgerEntry",
+        "description": "Enriched action entry for the ledger view.\n\nCombines Action data with Run metadata for complete audit context."
+      },
+      "LedgerResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "List of ledger entries"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of entries matching filters"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (0-indexed)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of entries per page"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "LedgerResponse",
+        "description": "Paginated response for ledger queries."
+      },
+      "LedgerStats": {
+        "properties": {
+          "total_actions": {
+            "type": "integer",
+            "title": "Total Actions",
+            "description": "Total number of actions"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd",
+            "description": "Total cost across all actions"
+          },
+          "success_count": {
+            "type": "integer",
+            "title": "Success Count",
+            "description": "Number of successful actions"
+          },
+          "error_count": {
+            "type": "integer",
+            "title": "Error Count",
+            "description": "Number of failed actions"
+          },
+          "blocked_count": {
+            "type": "integer",
+            "title": "Blocked Count",
+            "description": "Number of blocked actions"
+          },
+          "average_duration_ms": {
+            "type": "number",
+            "title": "Average Duration Ms",
+            "description": "Average action duration"
+          },
+          "unique_agents": {
+            "type": "integer",
+            "title": "Unique Agents",
+            "description": "Number of unique agents"
+          },
+          "unique_action_types": {
+            "type": "integer",
+            "title": "Unique Action Types",
+            "description": "Number of unique action names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_actions",
+          "total_cost_usd",
+          "success_count",
+          "error_count",
+          "blocked_count",
+          "average_duration_ms",
+          "unique_agents",
+          "unique_action_types"
+        ],
+        "title": "LedgerStats",
+        "description": "Aggregate statistics for the ledger."
+      },
       "LogEntry": {
         "properties": {
           "id": {
@@ -3420,6 +7275,311 @@
         ],
         "title": "LogEntry",
         "description": "Single log entry from the SDK ledger.\n\nCorresponds to one line in ledger.jsonl from the SDK."
+      },
+      "MCPPrompt": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Prompt name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Prompt description"
+          },
+          "arguments": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Arguments",
+            "description": "Required arguments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "title": "MCPPrompt",
+        "description": "MCP Prompt template"
+      },
+      "MCPPromptsResponse": {
+        "properties": {
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/MCPPrompt"
+            },
+            "type": "array",
+            "title": "Prompts",
+            "description": "Available MCP prompts"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of prompts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prompts",
+          "count"
+        ],
+        "title": "MCPPromptsResponse",
+        "description": "Response model for listing prompts"
+      },
+      "MCPResource": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "title": "Uri",
+            "description": "Resource URI"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Resource description"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "description": "MIME type",
+            "default": "application/json"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uri",
+          "name",
+          "description"
+        ],
+        "title": "MCPResource",
+        "description": "MCP Resource definition",
+        "example": {
+          "description": "Most recent agent execution runs",
+          "mime_type": "application/json",
+          "name": "Latest Runs",
+          "uri": "agentsentinel://runs/latest"
+        }
+      },
+      "MCPResourceDataResponse": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "title": "Uri",
+            "description": "Resource URI"
+          },
+          "data": {
+            "title": "Data",
+            "description": "Resource data"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type",
+            "description": "MIME type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uri",
+          "data",
+          "mime_type"
+        ],
+        "title": "MCPResourceDataResponse",
+        "description": "Response model for resource data"
+      },
+      "MCPResourcesResponse": {
+        "properties": {
+          "resources": {
+            "items": {
+              "$ref": "#/components/schemas/MCPResource"
+            },
+            "type": "array",
+            "title": "Resources",
+            "description": "Available MCP resources"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of resources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resources",
+          "count"
+        ],
+        "title": "MCPResourcesResponse",
+        "description": "Response model for listing resources"
+      },
+      "MCPTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Unique tool name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable description"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MCPToolType",
+            "description": "Tool category"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Input Schema",
+            "description": "JSON Schema for input parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "type",
+          "input_schema"
+        ],
+        "title": "MCPTool",
+        "description": "MCP Tool definition",
+        "example": {
+          "description": "Create a new policy to control agent behavior",
+          "input_schema": {
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "run_budget": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "name": "create_policy",
+          "type": "policy"
+        }
+      },
+      "MCPToolCallRequest": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "description": "Name of the tool to call"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments",
+            "description": "Tool input arguments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_name"
+        ],
+        "title": "MCPToolCallRequest",
+        "description": "Request model for MCP tool calls",
+        "example": {
+          "arguments": {
+            "enabled": true,
+            "name": "Production Limits",
+            "run_budget": 5.0
+          },
+          "tool_name": "create_policy"
+        }
+      },
+      "MCPToolCallResult": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the call succeeded"
+          },
+          "data": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "Result data"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if failed"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Additional metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "MCPToolCallResult",
+        "description": "Result of an MCP tool call"
+      },
+      "MCPToolType": {
+        "type": "string",
+        "enum": [
+          "policy",
+          "run",
+          "action",
+          "approval",
+          "stats",
+          "compliance",
+          "config"
+        ],
+        "title": "MCPToolType",
+        "description": "Types of MCP tools supported by AgentSentinel"
+      },
+      "MCPToolsResponse": {
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/MCPTool"
+            },
+            "type": "array",
+            "title": "Tools",
+            "description": "Available MCP tools"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total number of tools"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tools",
+          "count"
+        ],
+        "title": "MCPToolsResponse",
+        "description": "Response model for listing tools"
       },
       "Message": {
         "properties": {
@@ -3549,6 +7709,28 @@
         ],
         "title": "OversightLogEntry",
         "description": "Entry in the human oversight log (Article 14)"
+      },
+      "OversightLogsResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OversightLogEntry"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "OversightLogsResponse",
+        "description": "Paginated response for oversight logs"
       },
       "PoliciesPublic": {
         "properties": {
@@ -3686,6 +7868,78 @@
               }
             ],
             "title": "Target Id"
+          },
+          "enable_alerts": {
+            "type": "boolean",
+            "title": "Enable Alerts",
+            "description": "Enable email alerts for this policy",
+            "default": true
+          },
+          "alert_emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alert Emails",
+            "description": "Email addresses to notify on budget threshold/failure"
+          },
+          "alert_threshold_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold Percentage",
+            "description": "Alert when budget % is used (e.g., 80)"
+          },
+          "alert_on_failure": {
+            "type": "boolean",
+            "title": "Alert On Failure",
+            "description": "Send alert when budget is exceeded",
+            "default": true
+          },
+          "require_approval": {
+            "type": "boolean",
+            "title": "Require Approval",
+            "description": "If True, actions matching this policy require human approval",
+            "default": false
+          },
+          "approval_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approval Actions",
+            "description": "List of action names that require approval (empty = all actions if require_approval=True)"
+          },
+          "approval_threshold_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Threshold Usd",
+            "description": "Require approval for actions costing more than this amount"
+          },
+          "approval_timeout_seconds": {
+            "type": "integer",
+            "title": "Approval Timeout Seconds",
+            "description": "How long to wait for approval before request expires (default 1 hour)",
+            "default": 3600
+          },
+          "default_approvers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Default Approvers",
+            "description": "Email addresses of default approvers for this policy"
           }
         },
         "type": "object",
@@ -3810,6 +8064,78 @@
             ],
             "title": "Target Id"
           },
+          "enable_alerts": {
+            "type": "boolean",
+            "title": "Enable Alerts",
+            "description": "Enable email alerts for this policy",
+            "default": true
+          },
+          "alert_emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alert Emails",
+            "description": "Email addresses to notify on budget threshold/failure"
+          },
+          "alert_threshold_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold Percentage",
+            "description": "Alert when budget % is used (e.g., 80)"
+          },
+          "alert_on_failure": {
+            "type": "boolean",
+            "title": "Alert On Failure",
+            "description": "Send alert when budget is exceeded",
+            "default": true
+          },
+          "require_approval": {
+            "type": "boolean",
+            "title": "Require Approval",
+            "description": "If True, actions matching this policy require human approval",
+            "default": false
+          },
+          "approval_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approval Actions",
+            "description": "List of action names that require approval (empty = all actions if require_approval=True)"
+          },
+          "approval_threshold_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Threshold Usd",
+            "description": "Require approval for actions costing more than this amount"
+          },
+          "approval_timeout_seconds": {
+            "type": "integer",
+            "title": "Approval Timeout Seconds",
+            "description": "How long to wait for approval before request expires (default 1 hour)",
+            "default": 3600
+          },
+          "default_approvers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Default Approvers",
+            "description": "Email addresses of default approvers for this policy"
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -3827,6 +8153,18 @@
             ],
             "title": "Owner Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -3843,6 +8181,7 @@
           "name",
           "id",
           "owner_id",
+          "organization_id",
           "created_at",
           "updated_at"
         ],
@@ -3952,6 +8291,65 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "enable_alerts": {
+            "type": "boolean",
+            "title": "Enable Alerts"
+          },
+          "alert_emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alert Emails"
+          },
+          "alert_threshold_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold Percentage"
+          },
+          "alert_on_failure": {
+            "type": "boolean",
+            "title": "Alert On Failure"
+          },
+          "require_approval": {
+            "type": "boolean",
+            "title": "Require Approval"
+          },
+          "approval_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Approval Actions"
+          },
+          "approval_threshold_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Threshold Usd"
+          },
+          "approval_timeout_seconds": {
+            "type": "integer",
+            "title": "Approval Timeout Seconds"
+          },
+          "default_approvers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Default Approvers"
           }
         },
         "type": "object",
@@ -3966,7 +8364,16 @@
           "rate_limits",
           "scope",
           "target_id",
-          "updated_at"
+          "updated_at",
+          "enable_alerts",
+          "alert_emails",
+          "alert_threshold_percentage",
+          "alert_on_failure",
+          "require_approval",
+          "approval_actions",
+          "approval_threshold_usd",
+          "approval_timeout_seconds",
+          "default_approvers"
         ],
         "title": "PolicySync",
         "description": "Lightweight policy schema for SDK synchronization"
@@ -4108,6 +8515,114 @@
               }
             ],
             "title": "Target Id"
+          },
+          "enable_alerts": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Alerts"
+          },
+          "alert_emails": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Emails"
+          },
+          "alert_threshold_percentage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Threshold Percentage"
+          },
+          "alert_on_failure": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert On Failure"
+          },
+          "require_approval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Approval"
+          },
+          "approval_actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Actions"
+          },
+          "approval_threshold_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Threshold Usd"
+          },
+          "approval_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Timeout Seconds"
+          },
+          "default_approvers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Approvers"
           }
         },
         "type": "object",
@@ -4242,6 +8757,18 @@
         "title": "ReplayResult",
         "description": "Result of a replay operation."
       },
+      "RiskLevel": {
+        "type": "string",
+        "enum": [
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "critical"
+        ],
+        "title": "RiskLevel",
+        "description": "Risk assessment level for the action."
+      },
       "RunPublic": {
         "properties": {
           "status": {
@@ -4254,6 +8781,17 @@
             "type": "number",
             "title": "Total Cost",
             "default": 0.0
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
           },
           "compliance_metadata": {
             "anyOf": [
@@ -4285,6 +8823,18 @@
             ],
             "title": "Owner Id"
           },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
           "timestamp": {
             "type": "string",
             "format": "date-time",
@@ -4301,8 +8851,10 @@
         },
         "type": "object",
         "required": [
+          "agent_id",
           "id",
           "owner_id",
+          "organization_id",
           "timestamp"
         ],
         "title": "RunPublic"
@@ -4382,24 +8934,6 @@
         "title": "SubscriptionTier",
         "description": "Subscription tier levels"
       },
-      "Token": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "token_type": {
-            "type": "string",
-            "title": "Token Type",
-            "default": "bearer"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token"
-        ],
-        "title": "Token"
-      },
       "UpdatePassword": {
         "properties": {
           "current_password": {
@@ -4458,16 +8992,34 @@
             "default": "free"
           },
           "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 8,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Password"
+          },
+          "clerk_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clerk Id"
           }
         },
         "type": "object",
         "required": [
-          "email",
-          "password"
+          "email"
         ],
         "title": "UserCreate"
       },
@@ -4696,17 +9248,6 @@
           "type"
         ],
         "title": "ValidationError"
-      }
-    },
-    "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "/api/v1/login/access-token"
-          }
-        }
       }
     }
   }

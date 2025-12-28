@@ -1,0 +1,536 @@
+---
+title: "Activity Ledger API"
+description: "Query the immutable audit trail of all agent actions"
+---
+
+The Activity Ledger provides a **chronological, filterable view of every action** taken by your agents across all runs. This is the compliance substrate, audit evidence, and organizational memory for Agent Sentinel.
+
+## Overview
+
+Unlike the `/runs` endpoints which are hierarchical (Run → Actions), the ledger provides a **flat, chronological stream** of all actions with advanced filtering and search capabilities.
+
+### Key Use Cases
+
+1. **Compliance Audits**: "Show me all high-risk actions in Q4 2024"
+2. **Debugging**: "Find all failed `database_query` actions"
+3. **Cost Analysis**: "What are my most expensive actions?"
+4. **Security**: "Show all actions by `prod-agent-3` that were blocked"
+5. **Organizational Memory**: "What did our agents do last week?"
+
+## Endpoints
+
+### GET /api/v1/ledger
+
+Query the activity ledger with filtering, sorting, and pagination.
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 0 | Page number (0-indexed) |
+| `page_size` | integer | 100 | Items per page (max 1000) |
+| `outcome` | string | null | Filter by outcome: `success`, `error`, `blocked` |
+| `action_name` | string | null | Filter by exact action name |
+| `agent_id` | string | null | Filter by agent identifier |
+| `run_id` | UUID | null | Filter by parent run |
+| `min_cost` | float | null | Minimum cost in USD |
+| `max_cost` | float | null | Maximum cost in USD |
+| `start_date` | ISO 8601 | null | Filter actions after this date |
+| `end_date` | ISO 8601 | null | Filter actions before this date |
+| `search` | string | null | Search across action names, agent IDs, outcomes |
+| `sort_by` | enum | `timestamp` | Sort field: `timestamp`, `cost`, `duration`, `name` |
+| `sort_order` | enum | `desc` | Sort direction: `asc`, `desc` |
+
+#### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "database_query",
+      "outcome": "error",
+      "cost_usd": 0.05,
+      "duration_ms": 1234.5,
+      "inputs": {
+        "query": "SELECT * FROM users WHERE id = ?",
+        "params": [123]
+      },
+      "outputs": {
+        "error": "Connection timeout"
+      },
+      "run_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "run_status": "failed",
+      "agent_id": "prod-agent-3",
+      "timestamp": "2024-12-28T10:30:00.123456Z",
+      "compliance_metadata": null,
+      "organization_id": null
+    }
+  ],
+  "count": 1,
+  "page": 0,
+  "page_size": 50,
+  "total_pages": 1
+}
+```
+
+#### Example: Find Failed Actions
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger?outcome=error&sort_by=cost&sort_order=desc" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Example: Search Actions
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger?search=database&page_size=50" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+#### Example: Date Range Query
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger?start_date=2024-12-01T00:00:00Z&end_date=2024-12-31T23:59:59Z" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### GET /api/v1/ledger/stats
+
+Get aggregate statistics for the activity ledger.
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `start_date` | ISO 8601 | null | Start date for stats calculation |
+| `end_date` | ISO 8601 | null | End date for stats calculation |
+| `agent_id` | string | null | Calculate stats for specific agent |
+
+#### Response
+
+```json
+{
+  "total_actions": 4200,
+  "total_cost_usd": 42.50,
+  "success_count": 4120,
+  "error_count": 75,
+  "blocked_count": 5,
+  "average_duration_ms": 234.5,
+  "unique_agents": 12,
+  "unique_action_types": 45
+}
+```
+
+#### Example: Monthly Stats
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger/stats?start_date=2024-12-01T00:00:00Z&end_date=2024-12-31T23:59:59Z" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+### GET /api/v1/ledger/export
+
+Export ledger data for compliance audits and offline analysis.
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `format` | enum | `jsonl` | Export format: `jsonl`, `json`, `csv` |
+| `outcome` | string | null | Filter by outcome |
+| `action_name` | string | null | Filter by action name |
+| `agent_id` | string | null | Filter by agent |
+| `start_date` | ISO 8601 | null | Date range start |
+| `end_date` | ISO 8601 | null | Date range end |
+| `limit` | integer | 10000 | Maximum records (max 100,000) |
+
+#### Response
+
+File download in requested format.
+
+#### Example: Export as JSONL
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger/export?format=jsonl&limit=1000" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o ledger.jsonl
+```
+
+#### Example: Export Failed Actions as CSV
+
+```bash
+curl -X GET "https://api.agent-sentinel.dev/api/v1/ledger/export?format=csv&outcome=error" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o failed_actions.csv
+```
+
+---
+
+## Response Schema
+
+### LedgerEntry
+
+```typescript
+interface LedgerEntry {
+  // Core Action Data
+  id: string;              // UUID
+  name: string;            // Action name (e.g., "send_email", "database_query")
+  outcome: string;         // "success", "error", "blocked", etc.
+  cost_usd: number;        // Cost in USD
+  duration_ms: number;     // Execution duration
+  
+  // Payload
+  inputs: Record<string, any> | null;    // Action inputs/arguments
+  outputs: Record<string, any> | null;   // Action outputs/return value
+  
+  // Context
+  run_id: string;          // UUID of parent run
+  run_status: string;      // "running", "completed", "failed"
+  agent_id: string | null; // Agent identifier
+  timestamp: string;       // ISO 8601 timestamp
+  
+  // Compliance (Enterprise Tier)
+  compliance_metadata: ComplianceMetadata | null;
+  
+  // Organization
+  organization_id: string | null;
+}
+```
+
+### ComplianceMetadata (Enterprise Tier)
+
+```typescript
+interface ComplianceMetadata {
+  // Human-in-the-Loop (EU AI Act Article 14)
+  requires_human_approval?: boolean;
+  approval_status?: "not_required" | "pending" | "approved" | "rejected" | "timeout";
+  human_in_the_loop_id?: string;
+  human_in_the_loop_email?: string;
+  approval_timestamp?: string;
+  approval_notes?: string;
+  
+  // Decision Transparency
+  decision_rationale?: string;
+  confidence_score?: number;
+  alternative_actions_considered?: string[];
+  
+  // Data Lineage
+  input_data_sources?: Array<{
+    source: string;
+    version: string;
+    table?: string;
+  }>;
+  model_card?: {
+    name: string;
+    version: string;
+    provider: string;
+    system_prompt_hash?: string;
+  };
+  
+  // Audit Flags
+  policy_violations_checked?: string[];
+  override_reason?: string;
+}
+```
+
+---
+
+## Common Patterns
+
+### 1. Debugging Failed Actions
+
+```python
+import requests
+
+def find_failed_actions(api_key: str, action_name: str):
+    """Find all failed instances of a specific action."""
+    url = "https://api.agent-sentinel.dev/api/v1/ledger"
+    params = {
+        "outcome": "error",
+        "action_name": action_name,
+        "sort_by": "timestamp",
+        "sort_order": "desc",
+        "page_size": 100,
+    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+    
+    data = response.json()
+    print(f"Found {data['count']} failed {action_name} actions")
+    
+    for entry in data['data']:
+        print(f"[{entry['timestamp']}] {entry['name']} - {entry['outputs']['error']}")
+    
+    return data['data']
+
+# Usage
+failed_queries = find_failed_actions("sk_...", "database_query")
+```
+
+### 2. Cost Analysis by Agent
+
+```python
+def analyze_agent_costs(api_key: str, agent_id: str):
+    """Calculate total cost for a specific agent."""
+    url = "https://api.agent-sentinel.dev/api/v1/ledger/stats"
+    params = {"agent_id": agent_id}
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+    
+    stats = response.json()
+    print(f"Agent: {agent_id}")
+    print(f"Total Actions: {stats['total_actions']}")
+    print(f"Total Cost: ${stats['total_cost_usd']:.2f}")
+    print(f"Average Duration: {stats['average_duration_ms']:.0f}ms")
+    print(f"Success Rate: {stats['success_count'] / stats['total_actions'] * 100:.1f}%")
+    
+    return stats
+
+# Usage
+stats = analyze_agent_costs("sk_...", "prod-agent-3")
+```
+
+### 3. Compliance Audit Export
+
+```python
+def export_compliance_report(api_key: str, start_date: str, end_date: str):
+    """Export all actions for a date range (for compliance audits)."""
+    url = "https://api.agent-sentinel.dev/api/v1/ledger/export"
+    params = {
+        "format": "csv",
+        "start_date": start_date,
+        "end_date": end_date,
+        "limit": 100000,
+    }
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+    
+    filename = f"compliance_report_{start_date}_{end_date}.csv"
+    with open(filename, "wb") as f:
+        f.write(response.content)
+    
+    print(f"Exported compliance report to {filename}")
+    return filename
+
+# Usage
+export_compliance_report(
+    "sk_...",
+    "2024-10-01T00:00:00Z",
+    "2024-12-31T23:59:59Z"
+)
+```
+
+### 4. Real-Time Monitoring
+
+```python
+import time
+
+def monitor_failures(api_key: str, interval_seconds: int = 60):
+    """Monitor for new failures in real-time."""
+    url = "https://api.agent-sentinel.dev/api/v1/ledger"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    last_seen_id = None
+    
+    while True:
+        params = {
+            "outcome": "error",
+            "sort_by": "timestamp",
+            "sort_order": "desc",
+            "page_size": 10,
+        }
+        
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        
+        data = response.json()
+        new_failures = []
+        
+        for entry in data['data']:
+            if entry['id'] == last_seen_id:
+                break
+            new_failures.append(entry)
+        
+        if new_failures:
+            last_seen_id = new_failures[0]['id']
+            for failure in reversed(new_failures):
+                print(f"🚨 NEW FAILURE: {failure['name']} - {failure['outputs'].get('error', 'Unknown error')}")
+        
+        time.sleep(interval_seconds)
+
+# Usage (runs indefinitely)
+monitor_failures("sk_...")
+```
+
+---
+
+## Authentication
+
+All ledger endpoints require authentication via:
+
+1. **JWT Bearer Token**
+   ```bash
+   Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
+   ```
+
+2. **API Key** (recommended for programmatic access)
+   ```bash
+   Authorization: sk_1234567890abcdef
+   ```
+
+See [Authentication](/platform/authentication) for details.
+
+---
+
+## Access Control
+
+- Users can only see actions from their own runs
+- Superusers can see all actions across all users
+- Organization admins can see actions from their organization's runs
+
+---
+
+## Rate Limits
+
+- **Query Endpoints**: 1000 requests/hour
+- **Export Endpoint**: 100 requests/hour
+- **Stats Endpoint**: 600 requests/hour
+
+For higher limits, contact support or self-host the platform.
+
+---
+
+## Differences from /runs Endpoints
+
+| Feature | `/runs` | `/ledger` |
+|---------|---------|-----------|
+| **Structure** | Hierarchical (Run → Actions) | Flat (all actions) |
+| **Scope** | Single run at a time | All runs combined |
+| **Filtering** | By run properties | By action properties |
+| **Use Case** | Inspect specific run | Audit trail, search |
+| **Sorting** | Actions within run | Cross-run sorting |
+
+**When to use `/runs`:**
+- Inspecting a specific run's execution flow
+- Debugging a single agent workflow
+- Viewing run-level metadata
+
+**When to use `/ledger`:**
+- Compliance audits across all activity
+- Finding patterns across multiple runs
+- Cost analysis by action type
+- Security monitoring
+
+---
+
+## Best Practices
+
+### 1. Use Pagination for Large Results
+
+```python
+# DON'T: Fetch all 10,000 actions at once
+response = requests.get("/api/v1/ledger?page_size=10000")
+
+# DO: Paginate through results
+page = 0
+while True:
+    response = requests.get(f"/api/v1/ledger?page={page}&page_size=100")
+    data = response.json()
+    process_entries(data['data'])
+    
+    if page >= data['total_pages'] - 1:
+        break
+    page += 1
+```
+
+### 2. Use Search for Flexible Queries
+
+```python
+# Instead of exact matching:
+response = requests.get("/api/v1/ledger?action_name=database_query")
+
+# Use search for partial matches:
+response = requests.get("/api/v1/ledger?search=database")
+```
+
+### 3. Filter by Date Range for Performance
+
+```python
+# DON'T: Query all historical data
+response = requests.get("/api/v1/ledger")
+
+# DO: Limit to relevant time window
+response = requests.get("/api/v1/ledger?start_date=2024-12-01T00:00:00Z&end_date=2024-12-31T23:59:59Z")
+```
+
+### 4. Use Stats Endpoint for Aggregates
+
+```python
+# DON'T: Fetch all actions and calculate manually
+actions = requests.get("/api/v1/ledger?page_size=10000").json()
+total_cost = sum(a['cost_usd'] for a in actions['data'])
+
+# DO: Use stats endpoint
+stats = requests.get("/api/v1/ledger/stats").json()
+total_cost = stats['total_cost_usd']
+```
+
+---
+
+## Troubleshooting
+
+### Empty Results
+
+**Problem:** Query returns 0 results
+
+**Solutions:**
+1. Check filters - they may be too restrictive
+2. Verify date range includes expected data
+3. Ensure authentication is correct (not seeing another user's data)
+4. Check that agents have actually executed actions
+
+### Slow Queries
+
+**Problem:** Queries take >5 seconds
+
+**Solutions:**
+1. Reduce page size (100 instead of 1000)
+2. Add date range filters to limit data scanned
+3. Avoid search queries on large datasets
+4. Use stats endpoint for aggregates instead of fetching all data
+
+### Export Limits
+
+**Problem:** "Export limit exceeded" error
+
+**Solutions:**
+1. Reduce date range or add more filters
+2. Export in batches using pagination
+3. Contact support for bulk export access
+
+---
+
+## Related Documentation
+
+- [Runs API](/platform/runs) - Hierarchical run/action queries
+- [Ingest API](/platform/ingest) - How SDK sends action data
+- [Authentication](/platform/authentication) - API keys and JWT tokens
+- [Compliance Guide](/compliance/eu-ai-act) - Enterprise compliance features
+
+---
+
+## Feedback
+
+Have suggestions for the ledger API? [Open an issue](https://github.com/agent-sentinel/agent-sentinel/issues) or reach out to support.
+

@@ -1,0 +1,298 @@
+---
+title: "Console Quick Start"
+description: "Get started with the Agent Sentinel web console in 5 minutes."
+---
+
+## Sign up and login
+
+1. Navigate to [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Click "Sign Up" or "Sign In" (powered by Clerk)
+3. Create an account using:
+   - Email + password
+   - Google OAuth
+   - GitHub OAuth
+
+## Quick Start wizard
+
+On first login, you'll see the **Quick Start Wizard** - a 4-step guide to get you up and running.
+
+### Step 1: Welcome
+
+Introduction to Agent Sentinel features:
+- **Interventions**: See what actions Sentinel blocks
+- **Approvals**: Human oversight for sensitive operations
+- **Runs & Replay**: Debug agents with zero-cost replay
+- **Activity Ledger**: Complete audit trail
+- **Analytics**: Cost and performance tracking
+
+Click "Next" to continue.
+
+### Step 2: Create API Key
+
+Generate your first API key for SDK integration:
+
+1. Click "Generate API Key" button
+2. Copy the key immediately (shown only once)
+3. Store it securely (password manager, secrets vault)
+4. Click "Next"
+
+<Warning>
+**API keys are shown only once.** If you lose it, you'll need to generate a new one in Settings → API Keys.
+</Warning>
+
+### Step 3: SDK Setup
+
+Choose your language and copy the code snippet:
+
+**Python:**
+```python
+from agent_sentinel import enable_remote_sync, guarded_action
+
+# Enable platform sync
+enable_remote_sync(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",  # Replace with your key
+    agent_id="my-agent",
+    run_id="run-001",
+)
+
+# Instrument your functions
+@guarded_action(name="search_web", cost_usd=0.01, tags=["tool"])
+def search_web(query: str) -> dict:
+    return {"results": ["..."]}
+```
+
+**JavaScript (coming soon):**
+```javascript
+import { enableRemoteSync, guardedAction } from 'agent-sentinel';
+
+// Enable platform sync
+enableRemoteSync({
+  platformUrl: 'https://platform.agentsentinel.dev',
+  apiToken: 'as_your_api_key_here',
+  agentId: 'my-agent',
+  runId: 'run-001',
+});
+
+// Instrument your functions
+const searchWeb = guardedAction('search_web', { costUsd: 0.01 }, (query) => {
+  return { results: ['...'] };
+});
+```
+
+Click "Copy Code" and paste into your agent code.
+
+### Step 4: Complete
+
+Wizard completion with next steps:
+
+1. ✅ API key created
+2. ✅ SDK setup instructions provided
+3. 🎯 **Next**: Run your agent and view telemetry in the console
+4. 📚 **Learn more**: Check out the full documentation
+
+Click "Get Started" to go to the main dashboard.
+
+## Verify integration
+
+After running your agent with the SDK:
+
+1. Navigate to **Runs** page
+2. See your first run appear within seconds
+3. Click the run to see action details
+4. View costs, duration, and outcome
+
+<Tip>
+If you don't see your run within 30 seconds, check:
+- API key is correct
+- `platform_url` matches your deployment
+- Network connectivity to platform
+- SDK version is up-to-date
+</Tip>
+
+## Explore the console
+
+### 1. Dashboard
+
+Main overview with:
+- 5 stat cards (Total Runs, Units, Consumption, Pending Approvals, Failure Rate)
+- 8 tabbed sections
+- Real-time connection indicator
+- Notifications bell
+
+**Try it**: Click on stat cards to filter related views.
+
+### 2. Interventions
+
+Policy enforcement monitoring:
+- Total interventions
+- Blocked actions
+- Cost saved
+- High-risk blocks
+
+**Try it**: Set up a policy with denied actions, then attempt one - see it blocked in real-time.
+
+### 3. Approvals
+
+Human-in-the-loop workflow:
+- Pending approvals with countdown
+- Priority and risk indicators
+- One-click approve/reject
+- Decision history
+
+**Try it**: Mark an action as `requires_human_approval=True` and watch it appear in the inbox.
+
+### 4. Runs
+
+Execution history:
+- Run registry with filtering
+- Telemetry view (action sequences)
+- Replay simulation
+- Determinism analysis
+
+**Try it**: Click "Simulate Replay" on a completed run to test determinism.
+
+### 5. Activity Ledger
+
+Complete audit trail:
+- All actions across all runs
+- Advanced filtering
+- Export capabilities
+- Compliance metadata
+
+**Try it**: Use the search bar to find specific actions by name or input content.
+
+### 6. Agents
+
+Agent discovery:
+- Auto-registered agents
+- Performance metrics
+- Activity timelines
+- Recent runs
+
+**Try it**: Click an agent to see detailed statistics and edit display name.
+
+### 7. Analytics
+
+Cost and performance:
+- 30-day consumption chart
+- Daily breakdown
+- Average metrics
+- Time-based filtering
+
+**Try it**: Switch between 24h, 7d, 30d views to see cost trends.
+
+### 8. Settings
+
+Configuration:
+- **Policies**: Create budget limits, denied actions, rate limits
+- **API Keys**: Generate, view, revoke tokens
+- **Notifications**: Configure Slack, Email, Webhooks (coming soon)
+
+**Try it**: Create a policy with a $1 run budget, then watch it enforce in real-time.
+
+## Common tasks
+
+### Create a budget policy
+
+1. Go to **Settings** → **Policies** tab
+2. Click "Create Policy"
+3. Set name: "Development Budget"
+4. Set run budget: $1.00
+5. Set session budget: $5.00
+6. Enable the policy
+7. Save
+
+### Generate additional API keys
+
+1. Go to **Settings** → **API Keys** tab
+2. Click "Generate New Key"
+3. Copy the key immediately
+4. Key appears in list with prefix (e.g., `as_a1b2c3...`)
+
+### Approve a pending action
+
+1. Go to **Approvals** page
+2. Click "Review" on a pending approval
+3. Review action details, inputs, risk level
+4. Click "Approve" or "Reject"
+5. Add optional notes
+6. Confirm
+
+### Export activity ledger
+
+1. Go to **Activity Ledger** page
+2. Apply any desired filters
+3. Click "Export" button
+4. Choose format (JSONL, JSON, CSV)
+5. File downloads immediately
+
+### View agent statistics
+
+1. Go to **Agents** page
+2. Click on an agent
+3. See comprehensive stats:
+   - Total runs, actions, cost
+   - Success rate
+   - Recent activity (24h, 7d, 30d)
+   - Approval metrics
+   - Intervention rate
+
+## Keyboard shortcuts
+
+- `/` - Focus search bar (where available)
+- `Esc` - Close modals and dialogs
+- `Cmd/Ctrl + K` - Command palette (coming soon)
+
+## Troubleshooting
+
+### "No runs showing"
+
+- Verify API key is correct
+- Check SDK is configured with `enable_remote_sync()`
+- Confirm agent is actually running
+- Check browser console for errors
+
+### "Real-time updates not working"
+
+- Check WebSocket connection indicator (top right)
+- Verify no firewall blocking WebSocket (port 443)
+- Try refreshing the page
+- Fallback polling should activate automatically
+
+### "API key not working"
+
+- Ensure key starts with `as_`
+- Copy full key including prefix
+- Check key is active (Settings → API Keys)
+- Verify organization matches
+
+### "Approval not appearing"
+
+- Confirm `requires_human_approval=True` on action
+- Check action hasn't already completed
+- Verify timeout hasn't expired
+- Look in "Decision History" tab for expired approvals
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Interventions" icon="shield" href="/console/interventions">
+    Monitor policy enforcement in real-time
+  </Card>
+  <Card title="Approvals" icon="check" href="/console/approvals">
+    Set up human-in-the-loop workflows
+  </Card>
+  <Card title="Activity Ledger" icon="list" href="/console/ledger">
+    Explore complete audit trails
+  </Card>
+  <Card title="Settings" icon="gear" href="/console/settings">
+    Configure policies and integrations
+  </Card>
+</CardGroup>
+
+## See also
+
+- [SDK Installation](/sdk/python/installation) - Install the Python SDK
+- [Instrumentation](/sdk/python/instrumentation) - Instrument your agents
+- [Policies](/sdk/python/policies) - Configure budget limits and rules

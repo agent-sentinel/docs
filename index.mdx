@@ -5,24 +5,53 @@ description: "Kill switch, observability, and cost control for Python AI agents.
 
 Agent Sentinel helps you **observe**, **control cost**, and **enforce safety policies** across AI agent runs—without breaking your agent when telemetry fails.
 
-In v0.1 you get:
+## What you get
 
-- **Python SDK**: `@guarded_action` decorator, local-first JSONL ledger, budgets & policies, remote sync, replay mode.
-- **Platform (FastAPI)**: ingest endpoint, runs/actions API, policy management + policy sync for SDK, stats endpoints, replay analysis endpoints.
-- **Enterprise foundations**: EU AI Act compliance endpoints + human-in-the-loop metadata hooks (feature-gated).
+### Python SDK
+- **Instrumentation**: `@guarded_action` decorator for automatic telemetry
+- **Policy enforcement**: Budgets, allow/deny lists, rate limits
+- **Human-in-the-loop**: Approval workflows for sensitive actions
+- **Intervention tracking**: See what Sentinel blocks and why
+- **Remote sync**: Background sync to platform
+- **Replay mode**: Zero-cost deterministic replay for debugging
+- **LLM integrations**: Transparent instrumentation for OpenAI, Anthropic, Grok, Gemini
+- **Framework support**: Native LangChain and CrewAI integrations
+- **MCP client**: Model Context Protocol for LLM-platform interaction
+- **Error handling**: Comprehensive error types with recovery strategies
+
+### Platform (FastAPI)
+- **Agent discovery**: Automatic registration and metrics
+- **Interventions API**: Track policy enforcement and cost prevention
+- **Approvals API**: Human-in-the-loop approval workflows
+- **Activity Ledger**: Complete audit trail with advanced filtering
+- **WebSocket real-time**: Live event streaming
+- **MCP endpoints**: LLM-native API for autonomous operations
+- **Stats & analytics**: Cost tracking and performance metrics
+- **Replay analysis**: Determinism scoring and divergence detection
+- **Compliance**: EU AI Act Article 14 support
+
+### Web Console
+- **Real-time dashboard**: Live monitoring with WebSocket updates
+- **Interventions page**: Policy enforcement visibility
+- **Approvals inbox**: Review and approve sensitive actions
+- **Runs explorer**: Execution history with replay simulation
+- **Activity Ledger**: Complete audit trail with export
+- **Agent management**: Fleet overview with performance metrics
+- **Analytics**: Cost dashboards and optimization recommendations
+- **Settings**: Policy builder, API key management, notifications
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Instrument your agent, emit a ledger locally, and (optionally) sync to the platform.
+    Get started in 10 minutes - instrument your agent and sync to the platform.
   </Card>
   <Card title="Python SDK" icon="python" href="/sdk/python/installation">
-    Installation, instrumentation patterns, policies, remote sync, replay.
+    Full SDK documentation - instrumentation, policies, approvals, LLM integrations.
   </Card>
-  <Card title="Platform" icon="server" href="/platform/overview">
-    Self-hosting, auth & API keys, ingest payloads, runs/actions, policies.
+  <Card title="Platform API" icon="server" href="/platform/overview">
+    Platform documentation - agents, interventions, approvals, real-time updates.
   </Card>
-  <Card title="API reference" icon="code" href="/api-reference/introduction">
-    Auto-generated OpenAPI reference for the FastAPI platform.
+  <Card title="Web Console" icon="desktop" href="/console/overview">
+    Web UI guide - dashboard, interventions, approvals, runs, analytics.
   </Card>
 </CardGroup>
 
@@ -57,7 +86,30 @@ At runtime your agent code calls tools / functions. Agent Sentinel wraps those c
 └────────────────────────────┘
 ```
 
-## What to read next
+## Key features
+
+<CardGroup cols={3}>
+  <Card title="Interventions" icon="shield-halved" href="/sdk/python/interventions">
+    Track what Agent Sentinel blocks and demonstrate platform value.
+  </Card>
+  <Card title="Approvals" icon="user-check" href="/sdk/python/approvals">
+    Human-in-the-loop approval workflows for sensitive actions.
+  </Card>
+  <Card title="LLM integrations" icon="brain" href="/sdk/python/llm-integrations">
+    Transparent instrumentation for OpenAI, Anthropic, Grok, Gemini.
+  </Card>
+  <Card title="Agent discovery" icon="robot" href="/platform/agents">
+    Automatic agent registration with performance metrics.
+  </Card>
+  <Card title="Real-time updates" icon="bolt" href="/platform/websockets">
+    WebSocket event streaming for live dashboard updates.
+  </Card>
+  <Card title="Web console" icon="chart-line" href="/console/overview">
+    Modern web UI for monitoring, approvals, and analytics.
+  </Card>
+</CardGroup>
+
+## Core concepts
 
 <CardGroup cols={3}>
   <Card title="Actions & runs" icon="diagram-project" href="/concepts/actions-and-runs">
@@ -66,8 +118,8 @@ At runtime your agent code calls tools / functions. Agent Sentinel wraps those c
   <Card title="Policies" icon="shield" href="/concepts/policies">
     Budgets, allow/deny lists, rate limits, and remote policy sync.
   </Card>
-  <Card title="Remote sync" icon="cloud-arrow-up" href="/sdk/python/remote-sync">
-    Push local ledger entries to the platform in the background.
+  <Card title="Activity Ledger" icon="list" href="/concepts/ledger">
+    Complete audit trail with compliance metadata and export.
   </Card>
 </CardGroup>
 

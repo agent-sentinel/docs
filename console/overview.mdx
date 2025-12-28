@@ -1,0 +1,185 @@
+---
+title: "Web Console Overview"
+description: "Monitor, manage, and control your AI agents through the Agent Sentinel web console."
+---
+
+## What is the web console?
+
+The **Agent Sentinel Web Console** is a modern web application for monitoring and managing your AI agent fleet. It provides:
+
+- Real-time visibility into agent behavior
+- Human-in-the-loop approval workflows
+- Policy enforcement monitoring
+- Cost tracking and analytics
+- Compliance audit trails
+- Agent discovery and management
+
+## Key features
+
+### Real-time monitoring
+
+- **Live updates**: WebSocket-powered real-time data streaming
+- **Dashboard**: Aggregate stats with 5 key metrics
+- **Notifications**: Popup alerts for critical events
+- **Connection indicator**: Visual status of real-time connection
+
+### Intervention tracking
+
+- **Policy enforcement**: See what Agent Sentinel blocks in real-time
+- **Cost prevention**: Track USD saved by interventions
+- **Risk analysis**: Monitor critical/high-risk blocks
+- **Blast radius**: Understand impact of prevented actions
+
+### Approval workflows
+
+- **Inbox**: Review pending approval requests
+- **Priority triage**: Critical approvals highlighted with countdown
+- **One-click decisions**: Approve/reject with optional notes
+- **Info requests**: Ask agents for additional context
+- **Decision history**: Full audit trail of all decisions
+
+### Run telemetry
+
+- **Execution history**: Complete log of agent runs
+- **Action sequences**: Step-by-step view of actions within runs
+- **Replay mode**: Zero-cost simulation of past runs
+- **Determinism analysis**: Identify non-deterministic behavior
+
+### Activity ledger
+
+- **Complete audit trail**: Every action logged across all agents
+- **Advanced filtering**: Search by outcome, action, agent, cost, date
+- **Export capabilities**: JSONL, JSON, CSV formats
+- **Compliance metadata**: Approval status, decision rationale
+
+### Agent discovery
+
+- **Automatic registration**: Agents self-register on first use
+- **Performance metrics**: Success rates, cost per run, intervention rates
+- **Activity tracking**: 24h, 7d, 30d breakdowns
+- **Recent runs**: Link to agent's execution history
+
+### Cost analytics
+
+- **30-day consumption**: Bar chart of daily costs
+- **Cost breakdown**: By action type, agent, run
+- **Average metrics**: Unit cost, execution time
+- **Budget tracking**: Compare against policy budgets
+
+### Settings & configuration
+
+- **Policy management**: Create, edit, enable/disable policies
+- **API key generation**: Secure token management
+- **Notification channels**: Slack, Email, Webhooks (coming soon)
+
+## Tech stack
+
+- **Framework**: Next.js 16 with App Router
+- **UI**: React 19 with Tailwind CSS v4
+- **Authentication**: Clerk
+- **Charts**: Recharts
+- **Real-time**: WebSocket integration
+- **Type safety**: Full TypeScript coverage
+
+## Design philosophy
+
+The console features a **technical, industrial aesthetic**:
+
+- **Typography**: Space Grotesk (headings), DM Sans (body), JetBrains Mono (code)
+- **Colors**: Dark mode default with orange/red accents (FF3300)
+- **Layout**: Information-dense with progressive disclosure
+- **Components**: Border-emphasized, uppercase labels, heavy fonts
+
+## Navigation structure
+
+### Main sections
+
+1. **Interventions** (`/interventions`) - Policy enforcement monitoring
+2. **Approvals** (`/approvals`) - Human-in-the-loop workflow
+3. **Runs** (`/runs`) - Execution history and replay
+4. **Activity Ledger** (`/ledger`) - Complete audit trail
+5. **Agents** (`/agents`) - Agent discovery and management
+6. **Analytics** (`/analytics`) - Cost and performance dashboards
+7. **Settings** (`/settings`) - Policies, API keys, notifications
+
+### Dashboard tabs
+
+The main dashboard includes 8 tabs:
+- Recent Runs
+- Activity Ledger
+- Interventions
+- Agents
+- Approvals
+- Cost Analytics
+- API Keys
+- Policies
+
+## Quick Start wizard
+
+New users see a 4-step onboarding wizard:
+
+1. **Welcome**: Feature overview and introduction
+2. **API Key**: Generate API key for SDK integration
+3. **SDK Setup**: Python/JavaScript code snippets
+4. **Complete**: Confirmation and next steps
+
+The wizard auto-dismisses after first view but can be manually reopened.
+
+## Multi-tenancy
+
+The console supports organization-level multi-tenancy:
+
+- **Organizations**: Team-level data isolation
+- **Projects**: Logical grouping within organizations (future)
+- **Environments**: Dev/staging/prod separation (future)
+
+Use the sidebar selector to switch between organizations/projects/environments (disabled in current production build).
+
+## Authentication
+
+- **Clerk integration**: Secure user authentication
+- **JWT tokens**: Bearer token authentication for API calls
+- **API keys**: Long-lived tokens for SDK integration
+- **Session management**: Automatic token refresh
+
+## Real-time vs polling
+
+The console uses a hybrid approach:
+
+- **Primary**: WebSocket real-time updates
+- **Fallback**: Polling every 30 seconds if WebSocket disconnects
+- **Status indicator**: Shows "REALTIME" or "POLLING" mode
+
+## Best practices
+
+<Tip>
+**Enable real-time updates**: WebSocket connections provide instant updates - ensure they're not blocked by firewalls.
+</Tip>
+
+<Tip>
+**Use filters effectively**: All major views support filtering - use them to focus on relevant data.
+</Tip>
+
+<Tip>
+**Review approvals regularly**: Pending approvals expire - check the Approvals page frequently or enable notifications.
+</Tip>
+
+<Warning>
+**Protect API keys**: Generated API keys are shown only once - copy and store them securely before closing the modal.
+</Warning>
+
+## Getting started
+
+1. Sign up at [console.agentsentinel.dev](https://console.agentsentinel.dev)
+2. Complete the Quick Start wizard
+3. Generate an API key
+4. Install SDK: `pip install agent-sentinel`
+5. Configure SDK with your API key
+6. Start instrumenting your agents
+7. View telemetry in real-time
+
+## See also
+
+- [Quick Start](/console/quickstart) - Detailed onboarding guide
+- [Platform API](/platform/overview) - API documentation
+- [SDK Installation](/sdk/python/installation) - Python SDK setup

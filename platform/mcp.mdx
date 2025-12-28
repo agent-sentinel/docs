@@ -1,0 +1,504 @@
+---
+title: "MCP (Model Context Protocol)"
+description: "LLM-native API for autonomous platform management via structured tool calls."
+---
+
+## Overview
+
+The Model Context Protocol (MCP) provides a **standardized interface** for LLMs to interact with Agent Sentinel. It exposes platform functionality as:
+
+- **Tools**: Actions LLMs can execute (create policies, approve actions, query data)
+- **Resources**: Data LLMs can read (runs, approvals, stats, policies)
+- **Prompts**: Pre-configured workflows (analyze costs, review approvals, generate reports)
+
+This enables **LLMs to autonomously manage and monitor** the Agent Sentinel platform.
+
+## Endpoints
+
+### List available tools
+
+```bash
+GET /api/v1/mcp/tools
+```
+
+Returns all available MCP tools with schemas:
+
+```json
+{
+  "tools": [
+    {
+      "name": "create_policy",
+      "description": "Create a new policy with budgets and rules",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "enabled": {"type": "boolean"},
+          "session_budget": {"type": "number"},
+          "run_budget": {"type": "number"},
+          "denied_actions": {"type": "array", "items": {"type": "string"}},
+          "rate_limits": {"type": "object"}
+        },
+        "required": ["name"]
+      }
+    },
+    {
+      "name": "list_runs",
+      "description": "Get list of agent runs with optional filters",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "status": {"type": "string", "enum": ["running", "completed", "failed"]},
+          "min_cost": {"type": "number"},
+          "agent_id": {"type": "string"},
+          "limit": {"type": "integer"}
+        }
+      }
+    },
+    {
+      "name": "get_pending_approvals",
+      "description": "Fetch all pending approval requests",
+      "input_schema": {"type": "object"}
+    },
+    {
+      "name": "approve_action",
+      "description": "Approve a pending action",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "approval_id": {"type": "string"},
+          "approver_email": {"type": "string"},
+          "notes": {"type": "string"}
+        },
+        "required": ["approval_id", "approver_email"]
+      }
+    },
+    {
+      "name": "reject_action",
+      "description": "Reject a pending action",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "approval_id": {"type": "string"},
+          "approver_email": {"type": "string"},
+          "notes": {"type": "string"}
+        },
+        "required": ["approval_id", "approver_email"]
+      }
+    },
+    {
+      "name": "get_agent_stats",
+      "description": "Get comprehensive statistics for an agent",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "agent_id": {"type": "string"}
+        },
+        "required": ["agent_id"]
+      }
+    },
+    {
+      "name": "export_ledger",
+      "description": "Export activity ledger in JSON/JSONL/CSV format",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "format": {"type": "string", "enum": ["json", "jsonl", "csv"]},
+          "start_date": {"type": "string"},
+          "end_date": {"type": "string"},
+          "agent_id": {"type": "string"}
+        },
+        "required": ["format"]
+      }
+    }
+  ]
+}
+```
+
+### Execute MCP tool
+
+```bash
+POST /api/v1/mcp/call
+```
+
+**Request body:**
+```json
+{
+  "tool_name": "create_policy",
+  "arguments": {
+    "name": "Budget Control",
+    "description": "Limit costs for dev environment",
+    "enabled": true,
+    "session_budget": 5.0,
+    "run_budget": 1.0,
+    "denied_actions": ["delete_production_db"]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "policy_id": "policy_abc123",
+    "name": "Budget Control",
+    "enabled": true,
+    "created_at": "2024-12-28T14:30:00Z"
+  },
+  "error": null,
+  "metadata": {
+    "execution_time_ms": 45
+  }
+}
+```
+
+### List available resources
+
+```bash
+GET /api/v1/mcp/resources
+```
+
+Returns all available MCP resources:
+
+```json
+{
+  "resources": [
+    {
+      "uri": "agentsentinel://runs/latest",
+      "name": "Latest Run",
+      "description": "Get the most recent run",
+      "mime_type": "application/json"
+    },
+    {
+      "uri": "agentsentinel://approvals/pending",
+      "name": "Pending Approvals",
+      "description": "List all pending approval requests",
+      "mime_type": "application/json"
+    },
+    {
+      "uri": "agentsentinel://stats/dashboard",
+      "name": "Dashboard Stats",
+      "description": "Get aggregate dashboard statistics",
+      "mime_type": "application/json"
+    },
+    {
+      "uri": "agentsentinel://policies/active",
+      "name": "Active Policies",
+      "description": "List all enabled policies",
+      "mime_type": "application/json"
+    },
+    {
+      "uri": "agentsentinel://compliance/summary",
+      "name": "Compliance Summary",
+      "description": "Get compliance overview and status",
+      "mime_type": "application/json"
+    }
+  ]
+}
+```
+
+### Get resource data
+
+```bash
+GET /api/v1/mcp/resources/{uri}
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/mcp/resources/agentsentinel://stats/dashboard"
+```
+
+**Response:**
+```json
+{
+  "uri": "agentsentinel://stats/dashboard",
+  "mime_type": "application/json",
+  "data": {
+    "total_runs": 1234,
+    "total_actions": 45678,
+    "total_cost_usd": 567.89,
+    "success_rate": 0.95,
+    "pending_approvals": 5,
+    "interventions_24h": 23
+  }
+}
+```
+
+### List available prompts
+
+```bash
+GET /api/v1/mcp/prompts
+```
+
+Returns all available prompt templates:
+
+```json
+{
+  "prompts": [
+    {
+      "name": "create_budget_policy",
+      "description": "Guided workflow to create a budget policy",
+      "arguments": [
+        {
+          "name": "agent_id",
+          "description": "Agent ID to apply policy to",
+          "required": false
+        },
+        {
+          "name": "budget_usd",
+          "description": "Budget amount in USD",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "analyze_agent_costs",
+      "description": "Analyze cost patterns for an agent over time",
+      "arguments": [
+        {
+          "name": "agent_id",
+          "description": "Agent ID to analyze",
+          "required": true
+        },
+        {
+          "name": "days",
+          "description": "Number of days to analyze",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "review_pending_approvals",
+      "description": "Review and triage pending approval requests",
+      "arguments": []
+    },
+    {
+      "name": "compliance_audit_report",
+      "description": "Generate a compliance audit report",
+      "arguments": [
+        {
+          "name": "start_date",
+          "description": "Report start date",
+          "required": false
+        },
+        {
+          "name": "end_date",
+          "description": "Report end date",
+          "required": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Execute prompt template
+
+```bash
+POST /api/v1/mcp/prompts/{name}
+```
+
+**Example:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "arguments": {
+      "agent_id": "trading-bot",
+      "days": 7
+    }
+  }' \
+  "https://platform.agentsentinel.dev/api/v1/mcp/prompts/analyze_agent_costs"
+```
+
+**Response:**
+```json
+{
+  "prompt": "analyze_agent_costs",
+  "data": {
+    "summary": "The trading-bot has spent $45.23 over 7 days across 1,234 actions. Top cost drivers: call_llm ($23.45, 456 calls), search_web ($12.34, 234 calls). Average cost per run: $0.37. Recommendation: Consider caching search results to reduce API calls.",
+    "details": {
+      "total_cost_usd": 45.23,
+      "total_actions": 1234,
+      "total_runs": 123,
+      "avg_cost_per_run": 0.37,
+      "top_actions": [
+        {"action": "call_llm", "cost": 23.45, "count": 456},
+        {"action": "search_web", "cost": 12.34, "count": 234}
+      ]
+    }
+  }
+}
+```
+
+## Using MCP with Claude
+
+Give Claude access to Agent Sentinel via tool use:
+
+```python
+from anthropic import Anthropic
+import requests
+
+# Fetch MCP tools
+response = requests.get(
+    "https://platform.agentsentinel.dev/api/v1/mcp/tools",
+    headers={"Authorization": f"Bearer {api_token}"}
+)
+mcp_tools = response.json()["tools"]
+
+# Convert to Anthropic tool format
+anthropic_tools = [
+    {
+        "name": tool["name"],
+        "description": tool["description"],
+        "input_schema": tool["input_schema"]
+    }
+    for tool in mcp_tools
+]
+
+# Give Claude access
+client = Anthropic()
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=4096,
+    tools=anthropic_tools,
+    messages=[{
+        "role": "user",
+        "content": "Check if there are any critical-priority approvals that have been pending for more than 5 minutes. If so, show me the details."
+    }]
+)
+
+# Process tool calls
+if response.stop_reason == "tool_use":
+    for block in response.content:
+        if block.type == "tool_use":
+            # Execute MCP tool
+            result = requests.post(
+                "https://platform.agentsentinel.dev/api/v1/mcp/call",
+                headers={"Authorization": f"Bearer {api_token}"},
+                json={
+                    "tool_name": block.name,
+                    "arguments": block.input
+                }
+            )
+            print(result.json())
+```
+
+## Using MCP with OpenAI
+
+```python
+from openai import OpenAI
+import requests
+
+# Fetch MCP tools
+response = requests.get(
+    "https://platform.agentsentinel.dev/api/v1/mcp/tools",
+    headers={"Authorization": f"Bearer {api_token}"}
+)
+mcp_tools = response.json()["tools"]
+
+# Convert to OpenAI function format
+openai_functions = [
+    {
+        "name": tool["name"],
+        "description": tool["description"],
+        "parameters": tool["input_schema"]
+    }
+    for tool in mcp_tools
+]
+
+# Give GPT access
+client = OpenAI()
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{
+        "role": "user",
+        "content": "Create a policy to limit my development agent to $5 per run"
+    }],
+    functions=openai_functions,
+    function_call="auto"
+)
+
+# Process function calls
+if response.choices[0].message.function_call:
+    function_call = response.choices[0].message.function_call
+    # Execute MCP tool
+    result = requests.post(
+        "https://platform.agentsentinel.dev/api/v1/mcp/call",
+        headers={"Authorization": f"Bearer {api_token}"},
+        json={
+            "tool_name": function_call.name,
+            "arguments": json.loads(function_call.arguments)
+        }
+    )
+```
+
+## Example workflows
+
+### Autonomous approval management
+
+```
+User: "Review all pending approvals and approve any low-risk actions that cost less than $1"
+
+Claude uses MCP tools:
+1. get_pending_approvals() → Returns 5 pending approvals
+2. For each approval with risk_level="low" and cost < $1:
+   - approve_action(approval_id, approver_email="claude@company.com", notes="Auto-approved: low risk, low cost")
+3. Returns summary: "Approved 3 low-risk actions, 2 remain pending for human review"
+```
+
+### Cost optimization analysis
+
+```
+User: "Analyze costs for all my agents and suggest policy changes to reduce spend"
+
+Claude uses MCP tools:
+1. list_runs() → Get all runs
+2. For each unique agent_id:
+   - get_agent_stats(agent_id) → Get cost breakdown
+3. Analyzes patterns
+4. create_policy() → Creates budget policies for high-cost agents
+5. Returns report with recommendations
+```
+
+### Compliance reporting
+
+```
+User: "Generate a compliance report for the last 30 days"
+
+Claude uses MCP prompts:
+1. execute_prompt("compliance_audit_report", {start_date: "2024-11-28", end_date: "2024-12-28"})
+2. Returns formatted compliance report with:
+   - Total actions logged
+   - Human oversight events
+   - Policy violations
+   - Data retention status
+```
+
+## Best practices
+
+<Tip>
+**Use prompts for complex workflows**: Prompts encapsulate multi-step operations - use them instead of chaining multiple tool calls.
+</Tip>
+
+<Tip>
+**Secure API tokens**: MCP gives LLMs full access to your platform - use read-only tokens for analysis tasks, write tokens only when necessary.
+</Tip>
+
+<Warning>
+**Validate LLM decisions**: For critical operations (approvals, policy changes), implement human-in-the-loop confirmation before executing MCP tool calls.
+</Warning>
+
+<Tip>
+**Cache tool schemas**: Tool and resource lists change infrequently - cache them to reduce API calls.
+</Tip>
+
+## See also
+
+- [SDK MCP Client](/sdk/python/mcp) - Python SDK for MCP integration
+- [Approvals API](/platform/approvals) - Approval workflow endpoints
+- [Policies API](/platform/policies) - Policy management endpoints

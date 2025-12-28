@@ -1,0 +1,451 @@
+---
+title: "WebSocket Real-time Updates"
+description: "Real-time event streaming for live dashboard updates and notifications."
+---
+
+## Overview
+
+Agent Sentinel provides WebSocket endpoints for **real-time updates** of platform events. This enables:
+
+- Live dashboard updates as runs complete
+- Real-time approval notifications
+- Intervention alerts as they occur
+- Policy update broadcasts
+- Live statistics refreshes
+
+## WebSocket endpoints
+
+### Main WebSocket
+
+```
+WS /api/v1/ws?token={jwt_token}
+```
+
+Connects to the main WebSocket endpoint for all events.
+
+### Dashboard WebSocket
+
+```
+WS /api/v1/ws/dashboard?token={jwt_token}
+```
+
+Dashboard-specific endpoint with pre-filtered events for dashboard views.
+
+## Authentication
+
+WebSocket connections require JWT authentication via query parameter:
+
+```javascript
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+const ws = new WebSocket(`wss://platform.agentsentinel.dev/api/v1/ws?token=${token}`);
+```
+
+<Warning>
+Tokens in query parameters are visible in logs. Use WSS (WebSocket Secure) in production and rotate tokens regularly.
+</Warning>
+
+## Event types
+
+### run_created
+
+Fired when a new run is created via ingest:
+
+```json
+{
+  "event_type": "run_created",
+  "data": {
+    "run_id": "run_abc123",
+    "agent_id": "my-agent",
+    "status": "running",
+    "created_at": "2024-12-28T14:30:00Z"
+  },
+  "timestamp": "2024-12-28T14:30:00.123Z"
+}
+```
+
+### action_created
+
+Fired when a new action is logged:
+
+```json
+{
+  "event_type": "action_created",
+  "data": {
+    "action_id": "act_xyz789",
+    "run_id": "run_abc123",
+    "action_name": "call_llm",
+    "cost_usd": 0.05,
+    "outcome": "success",
+    "created_at": "2024-12-28T14:30:01Z"
+  },
+  "timestamp": "2024-12-28T14:30:01.456Z"
+}
+```
+
+### stats_updated
+
+Fired when aggregate statistics change (debounced to prevent flooding):
+
+```json
+{
+  "event_type": "stats_updated",
+  "data": {
+    "total_runs": 1235,
+    "total_actions": 45679,
+    "total_cost_usd": 567.94,
+    "success_rate": 0.95
+  },
+  "timestamp": "2024-12-28T14:30:05.789Z"
+}
+```
+
+### policy_updated
+
+Fired when a policy is created, updated, enabled, or disabled:
+
+```json
+{
+  "event_type": "policy_updated",
+  "data": {
+    "policy_id": "policy_123",
+    "name": "Budget Control",
+    "enabled": true,
+    "updated_at": "2024-12-28T14:30:00Z"
+  },
+  "timestamp": "2024-12-28T14:30:00.234Z"
+}
+```
+
+### intervention_created
+
+Fired when an intervention is recorded:
+
+```json
+{
+  "event_type": "intervention_created",
+  "data": {
+    "intervention_id": "int_abc123",
+    "type": "hard_block",
+    "action_name": "delete_production_db",
+    "risk_level": "critical",
+    "agent_id": "cleanup-bot",
+    "created_at": "2024-12-28T14:30:00Z"
+  },
+  "timestamp": "2024-12-28T14:30:00.567Z"
+}
+```
+
+### approval_created
+
+Fired when a new approval request is created:
+
+```json
+{
+  "event_type": "approval_created",
+  "data": {
+    "approval_id": "approval_abc123",
+    "action_name": "transfer_funds",
+    "priority": "high",
+    "risk_level": "high",
+    "agent_id": "payment-agent",
+    "expires_at": "2024-12-28T14:40:00Z"
+  },
+  "timestamp": "2024-12-28T14:30:00.890Z"
+}
+```
+
+### approval_updated
+
+Fired when an approval status changes (approved, rejected, expired):
+
+```json
+{
+  "event_type": "approval_updated",
+  "data": {
+    "approval_id": "approval_abc123",
+    "status": "approved",
+    "approver_email": "manager@company.com",
+    "updated_at": "2024-12-28T14:35:00Z"
+  },
+  "timestamp": "2024-12-28T14:35:00.123Z"
+}
+```
+
+### approval_expired
+
+Fired when an approval times out:
+
+```json
+{
+  "event_type": "approval_expired",
+  "data": {
+    "approval_id": "approval_abc123",
+    "action_name": "transfer_funds",
+    "expired_at": "2024-12-28T14:40:00Z"
+  },
+  "timestamp": "2024-12-28T14:40:00.456Z"
+}
+```
+
+### heartbeat
+
+Periodic keep-alive message (sent every 30 seconds):
+
+```json
+{
+  "event_type": "heartbeat",
+  "timestamp": "2024-12-28T14:30:00.000Z"
+}
+```
+
+## Client implementation
+
+### JavaScript/TypeScript (Web)
+
+```javascript
+class AgentSentinelWebSocket {
+  constructor(token) {
+    this.token = token;
+    this.ws = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+  }
+
+  connect() {
+    const url = `wss://platform.agentsentinel.dev/api/v1/ws?token=${this.token}`;
+    this.ws = new WebSocket(url);
+
+    this.ws.onopen = () => {
+      console.log('WebSocket connected');
+      this.reconnectAttempts = 0;
+    };
+
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      this.handleMessage(message);
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = () => {
+      console.log('WebSocket closed');
+      this.reconnect();
+    };
+  }
+
+  handleMessage(message) {
+    switch (message.event_type) {
+      case 'run_created':
+        this.onRunCreated(message.data);
+        break;
+      case 'action_created':
+        this.onActionCreated(message.data);
+        break;
+      case 'stats_updated':
+        this.onStatsUpdated(message.data);
+        break;
+      case 'intervention_created':
+        this.onInterventionCreated(message.data);
+        break;
+      case 'approval_created':
+        this.onApprovalCreated(message.data);
+        break;
+      case 'approval_updated':
+        this.onApprovalUpdated(message.data);
+        break;
+      case 'heartbeat':
+        // Keep-alive - no action needed
+        break;
+      default:
+        console.log('Unknown event:', message.event_type);
+    }
+  }
+
+  reconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+      console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      setTimeout(() => this.connect(), delay);
+    }
+  }
+
+  // Event handlers
+  onRunCreated(data) {
+    console.log('New run:', data.run_id);
+    // Update UI
+  }
+
+  onActionCreated(data) {
+    console.log('New action:', data.action_name);
+    // Update action list
+  }
+
+  onStatsUpdated(data) {
+    console.log('Stats updated:', data);
+    // Refresh dashboard stats
+  }
+
+  onInterventionCreated(data) {
+    console.log('New intervention:', data.type);
+    // Show notification
+    if (data.risk_level === 'critical') {
+      showNotification('Critical intervention!', data.action_name);
+    }
+  }
+
+  onApprovalCreated(data) {
+    console.log('New approval request:', data.approval_id);
+    // Show approval notification
+    showNotification('Approval required', data.action_name);
+  }
+
+  onApprovalUpdated(data) {
+    console.log('Approval updated:', data.status);
+    // Update approval UI
+  }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+}
+
+// Usage
+const ws = new AgentSentinelWebSocket(jwtToken);
+ws.connect();
+```
+
+### Python client
+
+```python
+import websocket
+import json
+import threading
+
+class AgentSentinelWebSocket:
+    def __init__(self, token):
+        self.token = token
+        self.ws = None
+        self.url = f"wss://platform.agentsentinel.dev/api/v1/ws?token={token}"
+
+    def on_message(self, ws, message):
+        data = json.loads(message)
+        event_type = data.get('event_type')
+
+        if event_type == 'run_created':
+            self.handle_run_created(data['data'])
+        elif event_type == 'intervention_created':
+            self.handle_intervention(data['data'])
+        elif event_type == 'approval_created':
+            self.handle_approval(data['data'])
+        # ... other handlers
+
+    def on_error(self, ws, error):
+        print(f"WebSocket error: {error}")
+
+    def on_close(self, ws, close_status_code, close_msg):
+        print("WebSocket closed")
+
+    def on_open(self, ws):
+        print("WebSocket connected")
+
+    def connect(self):
+        self.ws = websocket.WebSocketApp(
+            self.url,
+            on_message=self.on_message,
+            on_error=self.on_error,
+            on_close=self.on_close,
+            on_open=self.on_open
+        )
+
+        # Run in background thread
+        wst = threading.Thread(target=self.ws.run_forever)
+        wst.daemon = True
+        wst.start()
+
+    def handle_run_created(self, data):
+        print(f"New run: {data['run_id']}")
+
+    def handle_intervention(self, data):
+        print(f"Intervention: {data['type']} - {data['action_name']}")
+
+    def handle_approval(self, data):
+        print(f"Approval needed: {data['action_name']}")
+
+# Usage
+ws = AgentSentinelWebSocket(jwt_token)
+ws.connect()
+```
+
+## Connection management
+
+### Heartbeat
+
+The server sends heartbeat messages every 30 seconds to keep connections alive. Clients should:
+- Track last heartbeat time
+- Reconnect if no heartbeat received for 60+ seconds
+
+### Dead connection cleanup
+
+The server automatically closes connections that:
+- Haven't received a pong response to ping within 60 seconds
+- Are idle for 5+ minutes with no messages sent
+
+### Reconnection strategy
+
+Implement exponential backoff for reconnections:
+1. First retry: 1 second
+2. Second retry: 2 seconds
+3. Third retry: 4 seconds
+4. Fourth retry: 8 seconds
+5. Fifth retry: 16 seconds
+6. Max delay: 30 seconds
+
+## Best practices
+
+<Tip>
+**Implement reconnection logic**: WebSocket connections can drop due to network issues - always implement automatic reconnection with exponential backoff.
+</Tip>
+
+<Tip>
+**Debounce rapid updates**: Stats updates can fire frequently during high activity - debounce UI updates to prevent performance issues.
+</Tip>
+
+<Warning>
+**Don't rely solely on WebSocket**: Always support polling fallback - WebSockets may be blocked by firewalls or proxies.
+</Warning>
+
+<Tip>
+**Filter events client-side**: Subscribe to the main WebSocket but filter events in your client based on what the user is viewing.
+</Tip>
+
+## Troubleshooting
+
+### Connection fails immediately
+
+- Check token validity: `curl -H "Authorization: Bearer $TOKEN" https://platform.agentsentinel.dev/api/v1/users/me`
+- Verify WSS (not WS) for HTTPS deployments
+- Check firewall/proxy settings
+
+### No events received
+
+- Verify events are being created (check via REST API)
+- Confirm token has correct organization scope
+- Check for client-side filtering bugs
+
+### Frequent disconnections
+
+- Check network stability
+- Verify heartbeat handling
+- Review server logs for errors
+
+## See also
+
+- [Runs API](/platform/runs) - REST fallback for run data
+- [Approvals API](/platform/approvals) - REST fallback for approvals
+- [Stats API](/platform/stats) - REST fallback for statistics

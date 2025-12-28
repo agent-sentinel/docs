@@ -1,0 +1,129 @@
+---
+title: "Interventions"
+description: "Track when Agent Sentinel blocks, modifies, or escalates actions to demonstrate platform value."
+---
+
+## What are interventions?
+
+Interventions are records of when Agent Sentinel's policy engine **actively prevented** or **modified** agent actions. They demonstrate the platform's core value proposition: showing what disasters were avoided, costs saved, and risks mitigated.
+
+## Intervention types
+
+| Type | Description |
+|------|-------------|
+| `HARD_BLOCK` | Action completely denied by policy |
+| `APPROVAL_REQUIRED` | Escalated for human approval |
+| `RATE_LIMITED` | Blocked due to rate limiting |
+| `BUDGET_EXCEEDED` | Blocked due to budget constraints |
+| `DOWNGRADE` | Action parameters modified/reduced |
+| `WARNING` | Allowed but flagged as risky |
+
+## Intervention outcomes
+
+| Outcome | Description |
+|---------|-------------|
+| `BLOCKED` | Action was not executed |
+| `ESCALATED` | Sent for human review |
+| `APPROVED_AFTER_REVIEW` | Human approved after escalation |
+| `REJECTED_AFTER_REVIEW` | Human rejected after escalation |
+| `MODIFIED` | Action parameters were changed |
+| `WARNED` | Action executed with warning |
+
+## Automatic intervention tracking
+
+Interventions are **automatically tracked** when:
+
+- A policy denies an action
+- A budget limit is exceeded
+- Rate limiting triggers
+- Human approval is required
+
+```python
+from agent_sentinel import guarded_action, PolicyEngine
+
+# Configure strict budget
+PolicyEngine.configure(
+    session_budget=1.0,
+    strict_mode=True
+)
+
+# This will trigger an intervention if budget is exceeded
+@guarded_action(name="expensive_call", cost_usd=0.50)
+def call_expensive_api():
+    return "result"
+```
+
+## Intervention metadata
+
+Each intervention records:
+
+- **Action details**: name, description, inputs
+- **Risk assessment**: risk level, blast radius (impact if allowed)
+- **Cost metrics**: estimated cost, actual cost (if executed), cost prevented
+- **Policy context**: which policy triggered the intervention
+- **Agent context**: agent_id, run_id
+- **Outcome**: what happened (blocked, approved, modified, etc.)
+- **Rationale**: why Sentinel intervened
+- **Agent intent**: what the agent was trying to do
+
+## Viewing interventions
+
+Interventions are stored locally in `.agent-sentinel/interventions.jsonl` and synced to the platform if remote sync is enabled.
+
+View in the web console:
+- Navigate to **Interventions** page
+- See cost saved, high-risk blocks prevented
+- Filter by type, outcome, risk level
+- View detailed blast radius analysis
+
+## Platform API
+
+Interventions sync to the platform via the background sync service and can be queried via:
+
+```bash
+GET /api/v1/interventions
+GET /api/v1/interventions/stats
+GET /api/v1/interventions/{id}
+```
+
+## Example: Blast radius tracking
+
+```python
+from agent_sentinel import guarded_action, PolicyEngine
+
+PolicyEngine.configure(
+    denied_actions=["delete_production_database"]
+)
+
+@guarded_action(
+    name="delete_production_database",
+    cost_usd=0.0,
+    tags=["dangerous", "destructive"]
+)
+def delete_db():
+    # This will never execute - blocked by policy
+    # Intervention will record:
+    # - type: HARD_BLOCK
+    # - risk_level: CRITICAL
+    # - blast_radius: "Prevented deletion of production database"
+    # - outcome: BLOCKED
+    pass
+```
+
+## Cost prevention metrics
+
+The platform calculates:
+- **Total cost prevented**: Sum of estimated costs for blocked actions
+- **High-risk blocks**: Count of critical/high-risk interventions
+- **Top blocked actions**: Most frequently blocked action types
+- **Triggering policies**: Which policies provide the most value
+
+<Tip>
+Interventions are your "receipts" - they show stakeholders exactly what disasters Agent Sentinel prevented.
+</Tip>
+
+## See also
+
+- [Policies](/sdk/python/policies) - Configure policies that trigger interventions
+- [Approvals](/sdk/python/approvals) - Human-in-the-loop workflow for escalated actions
+- [Compliance](/sdk/python/compliance) - EU AI Act compliance features

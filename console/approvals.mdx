@@ -1,0 +1,308 @@
+---
+title: "Approvals Page"
+description: "Manage human-in-the-loop approval workflows for sensitive agent actions."
+---
+
+## Overview
+
+The **Approvals Page** is your inbox for reviewing and approving sensitive agent actions. Agents request approval when attempting high-risk operations, and humans make the final decision.
+
+## Layout
+
+The page has two main tabs:
+
+1. **Pending Actions** - Approval requests awaiting decision
+2. **Decision History** - All past approvals with outcomes
+
+## Dashboard stats
+
+At the top, 6 metrics show approval workflow health:
+
+| Stat | Description |
+|------|-------------|
+| **Total Pending** | Approvals awaiting decision |
+| **Critical/High Priority** | Urgent approvals needing immediate attention |
+| **Average Decision Time** | Mean time from request to decision |
+| **Info Requested** | Approvals where you asked for more context |
+| **Total Decisions** | Lifetime approval decisions |
+| **Approval Rate** | % of requests approved vs rejected |
+
+## Pending actions tab
+
+### Approval cards
+
+Each pending approval shows:
+
+- **Action Name** (large, prominent)
+- **Description** - What the action will do
+- **Priority Badge** - Critical (red), High (orange), Medium (yellow), Low (green)
+- **Risk Level Badge** - Critical, High, Medium, Low, Minimal
+- **Expiration Countdown** - Time remaining
+- **Estimated Cost** - USD cost if approved
+- **Agent ID** - Which agent is requesting
+- **Created** - How long ago requested
+
+**Visual cues:**
+- 🔴 **Expired/expiring soon** - Red countdown (< 1 min)
+- 🟠 **Expiring** - Orange countdown (< 5 min)
+- 🟢 **Plenty of time** - Green countdown (> 5 min)
+- ⏰ **Expired** - Gray with "EXPIRED" badge
+
+### Sorting and filtering
+
+**Filter by status:**
+- Pending
+- Approved
+- Rejected
+- Expired
+- Cancelled
+- Info Requested
+
+**Filter by priority:**
+- Critical
+- High
+- Medium
+- Low
+
+**Filter by risk level:**
+- Critical
+- High
+- Medium
+- Low
+- Minimal
+
+**Sort by:**
+- Newest first (default)
+- Expiring soonest
+- Highest priority
+- Highest cost
+
+### Review modal
+
+Click **Review** to open the detail modal with 4 sections:
+
+#### Action Details
+- **Full description** - Detailed explanation of what action will do
+- **Action inputs** - JSON view of parameters
+  ```json
+  {
+    "from_account": "acct_123",
+    "to_account": "acct_456",
+    "amount_usd": 10000.0
+  }
+  ```
+- **Context** - Additional metadata agent provided
+- **Estimated cost** - What this will cost if approved
+
+#### Agent Information
+- **Agent ID** - Which agent is requesting (link to agent page)
+- **Run ID** - Current run (link to run details)
+- **Agent intent** - Why agent wants to do this
+- **Recent history** - Past actions by this agent
+
+#### Risk Assessment
+- **Risk level** - Why this is risky
+- **Potential impact** - What could go wrong
+- **Blast radius** - Scope of impact if misused
+- **Compliance notes** - Regulatory considerations
+
+#### Decision Actions
+
+Three buttons:
+
+1. **Approve** (green) - Allow action to proceed
+   - Opens approval form:
+     - Your email (pre-filled)
+     - Notes (optional)
+     - Confirm button
+
+2. **Reject** (red) - Block action
+   - Opens rejection form:
+     - Your email (pre-filled)
+     - Reason (required)
+     - Confirm button
+
+3. **Request Info** (blue) - Ask agent for more context
+   - Opens info request form:
+     - Your email (pre-filled)
+     - Message to agent (required)
+     - Send button
+   - Status changes to "info_requested"
+   - Agent receives message and can respond
+   - Returns to "pending" after agent responds
+
+### Quick actions
+
+From the card (without opening modal):
+
+- **Quick Approve** - One-click approval (no notes)
+- **Quick Reject** - One-click rejection (generic reason)
+
+<Warning>
+**Use with caution**: Quick actions skip the detailed review - only use for low-risk, routine approvals.
+</Warning>
+
+## Decision history tab
+
+Shows all past approvals with:
+
+- **Timestamp** - When decided
+- **Action** - What was requested
+- **Decision** - Approved/Rejected/Expired badge
+- **Decider** - Who made the decision
+- **Notes** - Approver's notes or rejection reason
+- **Decision time** - How long it took to decide
+- **Cost impact** - Cost incurred (approved) or saved (rejected)
+
+**Filters:**
+- Time range (24h, 7d, 30d, all time)
+- Decision type (approved, rejected, expired)
+- Decider (filter by approver email)
+- Agent ID
+
+**Export:**
+- Download decision history as CSV/JSON
+- Includes all fields for compliance reporting
+
+## Real-time behavior
+
+### Live updates
+
+When a new approval is created:
+1. Appears at top of list with slide-in animation
+2. Browser notification (if enabled): "New approval required"
+3. Sound alert for critical priority (optional)
+
+When an approval is decided elsewhere:
+1. Card updates in real-time
+2. Moves from "Pending" to "Decision History"
+3. Stats refresh
+
+When approaching expiration:
+1. Countdown changes color
+2. Critical priority items flash (< 1 min remaining)
+
+### Expiration handling
+
+When an approval expires:
+1. Status changes to "EXPIRED"
+2. Card grays out
+3. Moves to "Decision History" tab
+4. Agent receives `TimeoutError`
+5. Intervention created with type "APPROVAL_REQUIRED", outcome "BLOCKED"
+
+## Common workflows
+
+### Daily approval triage
+
+1. Navigate to **Approvals** page
+2. Sort by "Expiring soonest"
+3. Review all critical/high priority first
+4. For each:
+   - Read description and context
+   - Check risk level
+   - Verify agent intent
+   - Approve or reject with notes
+5. Check "Info Requested" for agent responses
+
+### Handle critical approvals
+
+1. Filter by priority="Critical"
+2. Open review modal
+3. Read full context and inputs
+4. Verify this is legitimate and necessary
+5. If unclear, click "Request Info"
+6. Once satisfied, approve with detailed notes
+7. Monitor in Decision History to ensure action succeeds
+
+### Review approval patterns
+
+1. Go to "Decision History" tab
+2. Filter by time range (e.g., last 30 days)
+3. Identify patterns:
+   - Which actions are frequently requested?
+   - Which agent requests most approvals?
+   - What's your approval rate?
+4. If approval rate is low (< 70%), investigate:
+   - Are agents attempting inappropriate actions?
+   - Should policies be adjusted?
+
+### Respond to info requests
+
+1. Filter by status="Info Requested"
+2. See agent's response to your question
+3. Review additional context provided
+4. Return to approval review
+5. Make decision now that you have more info
+
+## Keyboard shortcuts
+
+- `a` - Approve (when modal open)
+- `r` - Reject (when modal open)
+- `i` - Request info (when modal open)
+- `Esc` - Close modal
+- `/` - Focus search/filter
+
+## Best practices
+
+<Tip>
+**Respond quickly**: Approvals have timeouts - aim to decide within 50% of timeout window to avoid expiration.
+</Tip>
+
+<Tip>
+**Add detailed notes**: Notes are logged for compliance - explain your reasoning for approvals and rejections.
+</Tip>
+
+<Warning>
+**Never quick-approve high-risk actions**: Always use the full review modal for high/critical risk approvals.
+</Warning>
+
+<Tip>
+**Use info requests liberally**: If anything is unclear, request more info rather than guessing.
+</Tip>
+
+<Tip>
+**Monitor approval rates**: If you're rejecting > 30% of requests, review agent logic or policy configuration.
+</Tip>
+
+## Notifications
+
+Configure approval notifications in **Settings** → **Notifications**:
+
+- **Email**: Get email for critical/high priority approvals
+- **Slack**: Approval requests posted to #approvals channel
+- **Webhook**: POST to custom URL for integration with your tools
+- **Browser**: Push notifications (requires permission)
+
+## Troubleshooting
+
+### "Approval disappeared"
+
+- Check "Decision History" tab - may have been decided
+- Check for expired approvals
+- Verify not filtered out by current filters
+
+### "Can't approve - button disabled"
+
+- Check if approval already expired
+- Verify you have permission (correct organization)
+- Refresh page - may be stale data
+
+### "Agent says approval pending, but I don't see it"
+
+- Check organization selector - may be in wrong org
+- Verify agent's `agent_id` matches your filters
+- Check "Info Requested" status
+- Look in "Decision History" - may have auto-expired
+
+### "Countdown not updating"
+
+- Check WebSocket connection (should show "REALTIME")
+- Refresh page to reset connection
+- Browser tab may be inactive - revisit tab
+
+## See also
+
+- [Platform Approvals API](/platform/approvals) - API documentation
+- [SDK Approvals](/sdk/python/approvals) - SDK-side approval client
+- [Settings](/console/settings#notifications) - Configure approval notifications

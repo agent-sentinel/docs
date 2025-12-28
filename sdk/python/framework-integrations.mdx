@@ -1,0 +1,376 @@
+---
+title: "Framework Integrations"
+description: "Integrate Agent Sentinel with LangChain, CrewAI, and other agent frameworks."
+---
+
+## Overview
+
+Agent Sentinel provides native integrations with popular agent frameworks, enabling automatic tracking of:
+
+- Agent actions and tool calls
+- LLM invocations
+- Chain execution
+- Token usage and costs
+- Errors and retries
+
+## LangChain integration
+
+### SentinelCallbackHandler
+
+Use Agent Sentinel's callback handler to track all LangChain activity:
+
+```python
+from agent_sentinel.integrations.langchain import SentinelCallbackHandler
+from langchain_openai import ChatOpenAI
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain.tools import tool
+
+# Create callback handler
+sentinel_handler = SentinelCallbackHandler(
+    agent_id="langchain-agent",
+    run_id="run-123"
+)
+
+# Define tools
+@tool
+def search(query: str) -> str:
+    """Search for information"""
+    return f"Results for: {query}"
+
+@tool
+def calculate(expression: str) -> str:
+    """Calculate a math expression"""
+    return str(eval(expression))
+
+# Create agent with callback
+llm = ChatOpenAI(model="gpt-4o", callbacks=[sentinel_handler])
+tools = [search, calculate]
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    callbacks=[sentinel_handler],
+    verbose=True
+)
+
+# Run agent - all activity automatically tracked
+result = agent_executor.invoke({
+    "input": "What is 15 * 23?"
+}, config={"callbacks": [sentinel_handler]})
+```
+
+### What's tracked
+
+The callback handler automatically tracks:
+
+1. **LLM calls**:
+   - Model name
+   - Prompt tokens
+   - Completion tokens
+   - Calculated cost
+   - Latency
+
+2. **Tool calls**:
+   - Tool name
+   - Input arguments
+   - Output/result
+   - Duration
+   - Success/failure
+
+3. **Agent actions**:
+   - Action taken
+   - Agent reasoning
+   - Observation
+   - Thought process
+
+4. **Chain execution**:
+   - Chain name
+   - Inputs
+   - Outputs
+   - Duration
+
+### Run summary
+
+Get a complete summary after execution:
+
+```python
+# After agent completes
+summary = sentinel_handler.get_run_summary()
+
+print(f"Total cost: ${summary['total_cost_usd']:.4f}")
+print(f"LLM calls: {summary['llm_calls']}")
+print(f"Tool calls: {summary['tool_calls']}")
+print(f"Total actions: {summary['total_actions']}")
+print(f"Errors: {summary['errors']}")
+
+# Cost breakdown by action type
+for action_type, cost in summary['costs_by_action'].items():
+    print(f"  {action_type}: ${cost:.4f}")
+```
+
+### Async LangChain
+
+The callback handler supports async chains:
+
+```python
+from langchain.chains import LLMChain
+
+chain = LLMChain(llm=llm, prompt=prompt, callbacks=[sentinel_handler])
+
+# Async execution
+result = await chain.ainvoke({"input": "Hello"})
+```
+
+## CrewAI integration
+
+### SentinelCrew wrapper
+
+Wrap CrewAI crews for automatic tracking:
+
+```python
+from agent_sentinel.integrations.crewai import SentinelCrew, SentinelAgent
+from crewai import Task
+
+# Create agents with Sentinel tracking
+researcher = SentinelAgent(
+    role="Researcher",
+    goal="Research topics thoroughly",
+    backstory="Expert researcher",
+    agent_id="researcher-agent"
+)
+
+writer = SentinelAgent(
+    role="Writer",
+    goal="Write compelling content",
+    backstory="Professional writer",
+    agent_id="writer-agent"
+)
+
+# Define tasks
+research_task = Task(
+    description="Research the topic of AI safety",
+    agent=researcher,
+    expected_output="Research findings"
+)
+
+writing_task = Task(
+    description="Write an article based on research",
+    agent=writer,
+    expected_output="Article content",
+    context=[research_task]
+)
+
+# Create crew with Sentinel tracking
+crew = SentinelCrew(
+    agents=[researcher, writer],
+    tasks=[research_task, writing_task],
+    verbose=True,
+    agent_id="content-crew",
+    run_id="run-456"
+)
+
+# Execute - all tasks and actions tracked
+result = crew.kickoff()
+
+# Get run summary
+summary = crew.get_run_summary()
+print(f"Total cost: ${summary['total_cost_usd']:.4f}")
+print(f"Tasks completed: {summary['tasks_completed']}")
+print(f"Total actions: {summary['total_actions']}")
+```
+
+### Wrapping existing crews
+
+Retrofit existing CrewAI crews without rewriting code:
+
+```python
+from agent_sentinel.integrations.crewai import wrap_existing_crew
+from crewai import Crew, Agent, Task
+
+# Existing crew code
+agent = Agent(role="Researcher", goal="Research topics", backstory="Expert")
+task = Task(description="Research AI", agent=agent)
+crew = Crew(agents=[agent], tasks=[task])
+
+# Add Sentinel tracking
+wrapped_crew = wrap_existing_crew(
+    crew=crew,
+    agent_id="legacy-crew",
+    run_id="run-789"
+)
+
+# Execute - now tracked
+result = wrapped_crew.kickoff()
+summary = wrapped_crew.get_run_summary()
+```
+
+### Individual action wrapping
+
+For fine-grained control, wrap individual crew actions:
+
+```python
+from agent_sentinel.integrations.crewai import wrap_crew_action
+from crewai import Agent, Task
+
+@wrap_crew_action(action_name="web_search", cost_usd=0.01)
+def search_web(query: str) -> str:
+    # Your search logic
+    return f"Results for {query}"
+
+agent = Agent(
+    role="Researcher",
+    goal="Research topics",
+    backstory="Expert",
+    tools=[search_web]  # Wrapped tool
+)
+```
+
+## Custom framework integration
+
+For frameworks not yet supported, use the low-level `@guarded_action` decorator:
+
+```python
+from agent_sentinel import guarded_action
+from your_framework import Agent, Task
+
+class TrackedAgent(Agent):
+    @guarded_action(name="agent_step", cost_usd=0.0)
+    def step(self, task):
+        # Your agent logic
+        result = super().step(task)
+        return result
+
+    @guarded_action(name="tool_call", cost_usd=0.02)
+    def call_tool(self, tool_name, args):
+        result = super().call_tool(tool_name, args)
+        return result
+```
+
+## Combining integrations
+
+Use multiple integrations together:
+
+```python
+from agent_sentinel.integrations import instrument_openai
+from agent_sentinel.integrations.langchain import SentinelCallbackHandler
+from langchain_openai import ChatOpenAI
+
+# Instrument OpenAI globally
+instrument_openai()
+
+# Use LangChain callback for structured tracking
+handler = SentinelCallbackHandler(agent_id="hybrid-agent")
+
+llm = ChatOpenAI(model="gpt-4o", callbacks=[handler])
+
+# Both instrumentation layers work together:
+# 1. OpenAI instrumentation tracks raw API calls + costs
+# 2. LangChain handler tracks chain/agent structure
+```
+
+## Best practices
+
+<Tip>
+**Use framework integrations when available**: Framework-specific integrations provide better structure and context than raw `@guarded_action` decorators.
+</Tip>
+
+<Tip>
+**Set agent_id and run_id**: Always provide identifiers for filtering and analysis in the web console.
+</Tip>
+
+<Tip>
+**Review run summaries**: Use `get_run_summary()` to understand cost breakdown and identify expensive operations.
+</Tip>
+
+<Warning>
+**Framework compatibility**: Test integrations when upgrading LangChain or CrewAI versions, as internal APIs may change.
+</Warning>
+
+## Troubleshooting
+
+### "LangChain events not tracked"
+
+Ensure callbacks are passed at all levels:
+
+```python
+# ✅ Correct - callbacks at LLM, agent, and executor
+llm = ChatOpenAI(callbacks=[handler])
+agent = create_openai_functions_agent(llm, tools, prompt)
+executor = AgentExecutor(agent=agent, tools=tools, callbacks=[handler])
+result = executor.invoke(input, config={"callbacks": [handler]})
+
+# ❌ Wrong - missing callbacks
+llm = ChatOpenAI()  # No callbacks!
+executor = AgentExecutor(agent=agent, tools=tools)
+result = executor.invoke(input)  # Not tracked
+```
+
+### "CrewAI costs not accurate"
+
+CrewAI cost tracking depends on:
+1. LLM instrumentation (e.g., `instrument_openai()`)
+2. Tool cost annotations via `@wrap_crew_action`
+
+Ensure both are configured for accurate cost tracking.
+
+### "Duplicate events"
+
+If using both LLM instrumentation and framework callbacks, you may see duplicate LLM call records. This is expected - one from the low-level instrumentation, one from the framework callback. The framework callback provides richer context (chain name, agent reasoning) while the low-level instrumentation provides precise token costs.
+
+## Example: Full stack tracking
+
+```python
+from agent_sentinel import enable_remote_sync, PolicyEngine
+from agent_sentinel.integrations import instrument_openai
+from agent_sentinel.integrations.langchain import SentinelCallbackHandler
+from langchain_openai import ChatOpenAI
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+
+# 1. Configure policies
+PolicyEngine.configure(
+    session_budget=5.0,
+    run_budget=1.0,
+    rate_limits={
+        "openai_chat_completion": {
+            "max_count": 50,
+            "window_seconds": 60
+        }
+    }
+)
+
+# 2. Enable platform sync
+enable_remote_sync(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+    agent_id="production-agent",
+    run_id="run-production-123"
+)
+
+# 3. Instrument LLM provider
+instrument_openai()
+
+# 4. Create LangChain agent with callback
+handler = SentinelCallbackHandler(
+    agent_id="production-agent",
+    run_id="run-production-123"
+)
+
+llm = ChatOpenAI(model="gpt-4o", callbacks=[handler])
+agent = create_openai_functions_agent(llm, tools, prompt)
+executor = AgentExecutor(agent=agent, tools=tools, callbacks=[handler])
+
+# 5. Run agent - fully tracked with policies enforced
+try:
+    result = executor.invoke({"input": user_query}, config={"callbacks": [handler]})
+    summary = handler.get_run_summary()
+    print(f"Success! Cost: ${summary['total_cost_usd']:.4f}")
+except BudgetExceededError:
+    print("Budget exceeded - agent stopped")
+```
+
+## See also
+
+- [LLM Integrations](/sdk/python/llm-integrations) - Direct LLM provider instrumentation
+- [Instrumentation](/sdk/python/instrumentation) - Manual action tracking
+- [Policies](/sdk/python/policies) - Cost and rate limiting

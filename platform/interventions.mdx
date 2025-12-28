@@ -1,0 +1,311 @@
+---
+title: "Interventions API"
+description: "Track when Agent Sentinel blocks, modifies, or escalates actions to demonstrate platform value."
+---
+
+## Overview
+
+Interventions are records of when Agent Sentinel's policy engine **actively prevented** or **modified** agent actions. The Interventions API provides:
+
+- Query endpoints for intervention history
+- Statistics showing "blast radius" avoided
+- Cost prevention metrics
+- Risk analysis
+
+## Endpoints
+
+### List interventions
+
+```bash
+GET /api/v1/interventions
+```
+
+**Query parameters:**
+- `type` (optional): Filter by intervention type
+  - `hard_block`, `approval_required`, `rate_limited`, `budget_exceeded`, `downgrade`, `warning`
+- `outcome` (optional): Filter by outcome
+  - `blocked`, `escalated`, `approved_after_review`, `rejected_after_review`, `modified`, `warned`
+- `action_name` (optional): Filter by action name (exact match)
+- `agent_id` (optional): Filter by agent ID
+- `run_id` (optional): Filter by run ID
+- `policy_id` (optional): Filter by policy that triggered intervention
+- `risk_level` (optional): Filter by risk level
+  - `critical`, `high`, `medium`, `low`, `minimal`
+- `start_date` (optional): Filter by date range start (ISO 8601)
+- `end_date` (optional): Filter by date range end (ISO 8601)
+- `skip` (optional): Pagination offset (default: 0)
+- `limit` (optional): Page size (default: 50, max: 1000)
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions?type=hard_block&risk_level=critical"
+```
+
+**Response:**
+```json
+{
+  "interventions": [
+    {
+      "id": "int_abc123",
+      "type": "hard_block",
+      "outcome": "blocked",
+      "action_name": "delete_production_database",
+      "description": "Attempted to delete production database",
+      "agent_id": "cleanup-bot",
+      "run_id": "run_xyz789",
+      "policy_id": "policy_123",
+      "policy_name": "Production Safety",
+      "risk_level": "critical",
+      "estimated_cost_usd": 0.0,
+      "actual_cost_usd": 0.0,
+      "cost_prevented_usd": 0.0,
+      "blast_radius": "Prevented deletion of 1M+ customer records",
+      "reason": "Action 'delete_production_database' is on the denied list",
+      "agent_intent": "Cleanup old test data",
+      "original_inputs": {
+        "database": "production",
+        "table": "customers"
+      },
+      "modified_inputs": null,
+      "timestamp": "2024-12-28T14:30:00Z",
+      "organization_id": "org_123",
+      "created_at": "2024-12-28T14:30:00Z"
+    }
+  ],
+  "total": 145,
+  "skip": 0,
+  "limit": 50
+}
+```
+
+### Get intervention details
+
+```bash
+GET /api/v1/interventions/{id}
+```
+
+Returns detailed information about a specific intervention.
+
+### Intervention statistics
+
+```bash
+GET /api/v1/interventions/stats
+```
+
+Returns aggregate statistics showing platform value:
+
+```json
+{
+  "total_interventions": 1456,
+  "by_type": {
+    "hard_block": 890,
+    "approval_required": 234,
+    "rate_limited": 156,
+    "budget_exceeded": 120,
+    "downgrade": 45,
+    "warning": 11
+  },
+  "by_outcome": {
+    "blocked": 1012,
+    "escalated": 234,
+    "approved_after_review": 156,
+    "rejected_after_review": 78,
+    "modified": 45,
+    "warned": 11
+  },
+  "cost_prevented_usd": 12456.78,
+  "high_risk_blocks": 123,
+  "time_series": [
+    {
+      "date": "2024-12-27",
+      "interventions": 48,
+      "cost_prevented_usd": 456.78
+    },
+    {
+      "date": "2024-12-28",
+      "interventions": 52,
+      "cost_prevented_usd": 523.12
+    }
+  ],
+  "top_blocked_actions": [
+    {
+      "action_name": "send_bulk_email",
+      "count": 234,
+      "cost_prevented_usd": 4567.89
+    },
+    {
+      "action_name": "delete_user_data",
+      "count": 189,
+      "cost_prevented_usd": 0.0
+    }
+  ],
+  "top_triggering_policies": [
+    {
+      "policy_id": "policy_123",
+      "policy_name": "Production Safety",
+      "count": 456
+    },
+    {
+      "policy_id": "policy_456",
+      "policy_name": "Cost Control",
+      "count": 234
+    }
+  ]
+}
+```
+
+### Create intervention (SDK)
+
+```bash
+POST /api/v1/interventions
+```
+
+Interventions are primarily created automatically by the SDK when policies trigger, but can also be created manually:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "hard_block",
+    "outcome": "blocked",
+    "action_name": "dangerous_operation",
+    "description": "Attempted dangerous operation",
+    "agent_id": "my-agent",
+    "run_id": "run_123",
+    "policy_id": "policy_456",
+    "risk_level": "high",
+    "estimated_cost_usd": 10.0,
+    "blast_radius": "Could have corrupted user data",
+    "reason": "Action blocked by safety policy",
+    "original_inputs": {"target": "production"}
+  }' \
+  "https://platform.agentsentinel.dev/api/v1/interventions"
+```
+
+### Delete intervention
+
+```bash
+DELETE /api/v1/interventions/{id}
+```
+
+Remove an intervention record (rare - usually for testing):
+
+```bash
+curl -X DELETE \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions/int_abc123"
+```
+
+## Intervention types
+
+| Type | Description | SDK trigger |
+|------|-------------|-------------|
+| `HARD_BLOCK` | Action completely denied | Denied action list, allowlist violation |
+| `APPROVAL_REQUIRED` | Escalated for human approval | `requires_human_approval=True` |
+| `RATE_LIMITED` | Blocked due to rate limiting | Rate limit exceeded |
+| `BUDGET_EXCEEDED` | Blocked due to budget constraints | Session/run/action budget exceeded |
+| `DOWNGRADE` | Action parameters modified/reduced | Custom policy logic (future) |
+| `WARNING` | Allowed but flagged as risky | Soft policy violations (future) |
+
+## Intervention outcomes
+
+| Outcome | Description |
+|---------|-------------|
+| `BLOCKED` | Action was not executed |
+| `ESCALATED` | Sent for human review via approval inbox |
+| `APPROVED_AFTER_REVIEW` | Human approved after escalation |
+| `REJECTED_AFTER_REVIEW` | Human rejected after escalation |
+| `MODIFIED` | Action parameters were changed before execution |
+| `WARNED` | Action executed with warning logged |
+
+## Risk levels
+
+| Level | Description |
+|-------|-------------|
+| `CRITICAL` | Catastrophic impact if allowed (data loss, financial harm) |
+| `HIGH` | Severe impact (production changes, high costs) |
+| `MEDIUM` | Moderate impact (workflow disruption, moderate costs) |
+| `LOW` | Minor impact (logging, low costs) |
+| `MINIMAL` | Negligible impact |
+
+## Use cases
+
+### Platform value demonstration
+
+Show stakeholders what disasters were prevented:
+
+```bash
+# Get cost prevented this month
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions/stats?start_date=2024-12-01"
+```
+
+### Security monitoring
+
+Monitor attempted policy violations:
+
+```bash
+# Get all critical-risk blocks
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions?risk_level=critical&outcome=blocked"
+```
+
+### Policy tuning
+
+Identify policies that trigger frequently (may need adjustment):
+
+```bash
+# Get interventions by policy
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions?policy_id=policy_123&limit=100"
+```
+
+### Agent behavior analysis
+
+Understand which agents are most frequently blocked:
+
+```bash
+# Get interventions for specific agent
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/interventions?agent_id=rogue-bot"
+```
+
+## Web console
+
+View interventions in the web console:
+
+1. Navigate to **Interventions** page
+2. See dashboard with:
+   - Total interventions
+   - Cost saved
+   - High-risk blocks
+   - Blocked actions count
+3. Filter by type, outcome, risk level
+4. Click intervention for details including blast radius analysis
+5. Link to adjust triggering policy
+
+## Best practices
+
+<Tip>
+**Review interventions regularly**: High intervention rates may indicate overly restrictive policies or misbehaving agents.
+</Tip>
+
+<Tip>
+**Use blast radius field**: Document what would have happened if the action was allowed - this demonstrates platform ROI.
+</Tip>
+
+<Tip>
+**Track cost prevented**: Even if `estimated_cost_usd` is 0, interventions prevent non-monetary harm (data loss, reputation damage).
+</Tip>
+
+<Warning>
+**Don't rely solely on interventions**: Some actions may slip through if policies aren't comprehensive. Use interventions as defense-in-depth.
+</Warning>
+
+## See also
+
+- [SDK Interventions](/sdk/python/interventions) - SDK-side intervention tracking
+- [Policies](/platform/policies) - Configure policies that trigger interventions
+- [Approvals](/platform/approvals) - Human-in-the-loop workflow for escalated actions

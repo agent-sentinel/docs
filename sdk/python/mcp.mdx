@@ -1,0 +1,304 @@
+---
+title: "MCP Integration"
+description: "Use the Model Context Protocol to give LLMs direct access to Agent Sentinel platform features."
+---
+
+## What is MCP?
+
+The **Model Context Protocol (MCP)** provides a standardized way for LLMs to interact with external systems. Agent Sentinel's MCP integration gives LLMs direct, structured access to:
+
+- Platform data (runs, approvals, stats, policies)
+- Tool execution (create policies, approve actions, get metrics)
+- Prompt templates (common workflows pre-configured)
+
+This enables LLMs to become **autonomous operators** of the Agent Sentinel platform.
+
+## Quick start
+
+```python
+from agent_sentinel import MCPClient
+
+# Initialize client
+client = MCPClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+# Discover available tools
+tools = client.list_tools()
+print(f"Available tools: {[t['name'] for t in tools]}")
+
+# Execute a tool
+result = client.call_tool(
+    tool_name="create_policy",
+    arguments={
+        "name": "Budget Control",
+        "session_budget": 10.0,
+        "run_budget": 1.0,
+    }
+)
+```
+
+## MCP tools
+
+Tools allow LLMs to perform actions on the platform:
+
+### Available tools
+
+| Tool | Description |
+|------|-------------|
+| `create_policy` | Create a new policy with budgets and rules |
+| `list_runs` | Get list of agent runs with filters |
+| `get_pending_approvals` | Fetch pending approval requests |
+| `approve_action` | Approve a pending action |
+| `reject_action` | Reject a pending action |
+| `get_agent_stats` | Get statistics for a specific agent |
+| `export_ledger` | Export activity ledger in various formats |
+
+### Example: Create a policy
+
+```python
+result = client.call_tool(
+    tool_name="create_policy",
+    arguments={
+        "name": "Production Safety",
+        "description": "Strict limits for production agents",
+        "enabled": True,
+        "session_budget": 50.0,
+        "run_budget": 5.0,
+        "denied_actions": ["delete_database", "drop_table"],
+        "rate_limits": {
+            "api_call": {
+                "max_count": 100,
+                "window_seconds": 60
+            }
+        }
+    }
+)
+```
+
+### Example: Approve an action
+
+```python
+# Get pending approvals
+approvals = client.call_tool("get_pending_approvals", {})
+
+# Approve the first one
+if approvals["data"]:
+    approval_id = approvals["data"][0]["id"]
+    result = client.call_tool(
+        tool_name="approve_action",
+        arguments={
+            "approval_id": approval_id,
+            "approver_email": "manager@company.com",
+            "notes": "Approved - verified with customer"
+        }
+    )
+```
+
+## MCP resources
+
+Resources provide read-only access to platform data:
+
+### Available resources
+
+| Resource URI | Description |
+|--------------|-------------|
+| `agentsentinel://runs/latest` | Get the most recent run |
+| `agentsentinel://approvals/pending` | List all pending approvals |
+| `agentsentinel://stats/dashboard` | Get dashboard statistics |
+| `agentsentinel://policies/active` | List all active policies |
+| `agentsentinel://compliance/summary` | Get compliance summary |
+
+### Example: Access resources
+
+```python
+# Get latest run
+latest_run = client.get_resource("agentsentinel://runs/latest")
+print(f"Latest run: {latest_run['data']['run_id']}")
+
+# Get dashboard stats
+stats = client.get_resource("agentsentinel://stats/dashboard")
+print(f"Total cost: ${stats['data']['total_cost']}")
+
+# List pending approvals
+pending = client.get_resource("agentsentinel://approvals/pending")
+print(f"Pending approvals: {len(pending['data'])}")
+```
+
+## MCP prompts
+
+Prompts are pre-configured workflows that LLMs can execute:
+
+### Available prompts
+
+| Prompt | Description |
+|--------|-------------|
+| `create_budget_policy` | Guided workflow to create a budget policy |
+| `analyze_agent_costs` | Analyze cost patterns for an agent |
+| `review_pending_approvals` | Review and triage pending approvals |
+| `compliance_audit_report` | Generate a compliance audit report |
+
+### Example: Execute a prompt
+
+```python
+result = client.execute_prompt(
+    prompt_name="analyze_agent_costs",
+    arguments={
+        "agent_id": "trading-bot",
+        "days": 7
+    }
+)
+
+print(result["data"]["analysis"])
+# Output: "The trading-bot has spent $45.23 over 7 days across 1,234 actions.
+#          Top cost drivers: call_llm ($23.45), search_web ($12.34)..."
+```
+
+## Convenience methods
+
+The MCP client provides convenience methods for common operations:
+
+```python
+from agent_sentinel import MCPClient
+
+client = MCPClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+# Create a policy
+policy = client.create_policy(
+    name="Dev Environment",
+    session_budget=1.0,
+    enabled=True
+)
+
+# List runs with filters
+runs = client.list_runs(
+    status="failed",
+    min_cost=0.50,
+    limit=10
+)
+
+# Get pending approvals
+approvals = client.get_pending_approvals()
+
+# Approve an action
+client.approve_action(
+    approval_id="approval-123",
+    approver_email="you@company.com",
+    notes="LGTM"
+)
+
+# Reject an action
+client.reject_action(
+    approval_id="approval-456",
+    approver_email="you@company.com",
+    notes="Too risky"
+)
+
+# Get agent statistics
+stats = client.get_agent_stats(agent_id="my-agent")
+print(f"Total runs: {stats['total_runs']}")
+print(f"Success rate: {stats['success_rate']}%")
+```
+
+## Using MCP with LLMs
+
+The primary use case is giving LLMs tool-calling access to the platform:
+
+```python
+from anthropic import Anthropic
+from agent_sentinel import MCPClient
+
+# Initialize clients
+mcp = MCPClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+anthropic = Anthropic()
+
+# Get MCP tools as Anthropic tool schemas
+tools = mcp.list_tools()
+anthropic_tools = [
+    {
+        "name": tool["name"],
+        "description": tool["description"],
+        "input_schema": tool["input_schema"]
+    }
+    for tool in tools
+]
+
+# Give Claude access to Agent Sentinel
+response = anthropic.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=4096,
+    tools=anthropic_tools,
+    messages=[{
+        "role": "user",
+        "content": "Check if there are any pending approvals that have been waiting more than 1 hour and are critical priority. If so, send me a summary."
+    }]
+)
+
+# Process tool calls
+if response.stop_reason == "tool_use":
+    for tool_use in response.content:
+        if tool_use.type == "tool_use":
+            result = mcp.call_tool(
+                tool_name=tool_use.name,
+                arguments=tool_use.input
+            )
+            print(result)
+```
+
+## Caching
+
+Enable caching for better performance:
+
+```python
+client = MCPClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+    enable_caching=True,  # Cache tool lists, resources
+    cache_ttl=300,  # 5 minutes
+)
+```
+
+## Global client
+
+Set a default MCP client for your application:
+
+```python
+from agent_sentinel.mcp import set_default_client, get_default_client
+
+# Set default
+set_default_client(MCPClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+))
+
+# Use anywhere in your app
+client = get_default_client()
+tools = client.list_tools()
+```
+
+## Best practices
+
+<Tip>
+**Use MCP for autonomous operations**: Let LLMs manage policies, approve actions, and analyze costs without manual intervention.
+</Tip>
+
+<Tip>
+**Combine with function calling**: Use Claude 3.5 Sonnet or GPT-4 with function calling to enable fully autonomous platform management.
+</Tip>
+
+<Warning>
+**Secure your API tokens**: MCP gives LLMs full access to your platform. Use read-only tokens for analysis tasks, and carefully control write access.
+</Warning>
+
+## See also
+
+- [Approvals](/sdk/python/approvals) - Human-in-the-loop workflow
+- [Policies](/sdk/python/policies) - Policy configuration
+- [Platform API Reference](/api-reference/introduction) - Full API documentation

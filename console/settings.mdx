@@ -1,0 +1,550 @@
+---
+title: "Settings Page"
+description: "Configure policies, manage API keys, and set up notifications."
+---
+
+## Overview
+
+The **Settings Page** is your control center for configuring Agent Sentinel. Manage policies that control agent behavior, generate API keys for SDK integration, and set up notification channels.
+
+## Three main tabs
+
+1. **Policies** - Budget limits, denied actions, rate limits, approval rules
+2. **API Keys** - Generate and manage authentication tokens
+3. **Notifications** - Configure alert channels (Slack, Email, Webhooks)
+
+---
+
+## Policies tab
+
+### Policy list
+
+View all configured policies with:
+- **Name** - Policy identifier
+- **Description** - What it does
+- **Scope** - Global, agent-specific, or run-specific
+- **Enabled** - Toggle switch (green=on, gray=off)
+- **Last Updated** - Timestamp of last modification
+
+**Quick actions:**
+- **Enable/Disable** - Toggle switch (instant)
+- **Edit** - Modify policy configuration
+- **Delete** - Remove policy (with confirmation)
+- **Test Alert** - Send test notification
+
+### Create new policy
+
+Click **Create Policy** to open policy builder:
+
+#### Basic settings
+
+- **Name** (required) - Unique identifier
+  - Example: "Production Safety", "Dev Budget", "Rate Limits"
+- **Description** (optional) - What this policy does
+  - Example: "Strict limits for production agents"
+- **Enabled** - Start enabled or disabled
+- **Scope** - Who this applies to:
+  - **Global** - All agents
+  - **Agent-specific** - One agent (enter agent_id)
+  - **Run-specific** - One run (enter run_id)
+
+#### Budget limits
+
+Set cost constraints:
+
+**Session budget** (USD)
+- Limit for entire application session
+- Example: $50.00
+- Applies across all runs in a session
+
+**Run budget** (USD)
+- Limit per individual run
+- Example: $5.00
+- Resets for each new run
+
+**Action-specific budgets** (USD)
+- Limit per action type
+- Add multiple action budgets
+- Example:
+  - `call_llm`: $0.50
+  - `search_web`: $0.10
+  - `transfer_funds`: $0.00 (effectively blocks if > 0)
+
+**Behavior on violation:**
+- SDK raises `BudgetExceededError`
+- Action is blocked before execution
+- Intervention is logged
+
+#### Action control lists
+
+**Denied actions:**
+- Actions that are **completely blocked**
+- Add action names one per line or comma-separated
+- Example:
+  ```
+  delete_production_database
+  drop_table
+  rm_rf_root
+  send_all_customer_emails
+  ```
+- Matched exactly (case-sensitive)
+
+**Allowed actions (allowlist mode):**
+- If specified, **only** these actions are permitted
+- All other actions are blocked
+- Use for strict security
+- Example (read-only mode):
+  ```
+  read_database
+  query_api
+  log_message
+  ```
+- Leave empty to disable allowlist mode
+
+**Behavior on violation:**
+- SDK raises `PolicyViolationError`
+- Action is blocked before execution
+- Intervention is logged with type `HARD_BLOCK`
+
+#### Rate limiting
+
+Limit action frequency to prevent runaway agents:
+
+**Add rate limit:**
+- **Action name** - Which action to limit
+- **Max count** - Maximum calls allowed
+- **Window (seconds)** - Time window for count
+
+**Examples:**
+
+```
+Action: api_call
+Max count: 100
+Window: 60 seconds
+→ Limit to 100 API calls per minute
+```
+
+```
+Action: send_email
+Max count: 10
+Window: 3600 seconds
+→ Limit to 10 emails per hour
+```
+
+```
+Action: expensive_llm_call
+Max count: 5
+Window: 86400 seconds
+→ Limit to 5 calls per day
+```
+
+**Behavior on violation:**
+- SDK raises `PolicyViolationError`
+- Action is blocked before execution
+- Intervention is logged with type `RATE_LIMITED`
+
+#### Human approval settings
+
+Configure when actions require human approval:
+
+**Required approval actions:**
+- List of actions that **must** be approved
+- Example:
+  ```
+  transfer_funds
+  delete_user_data
+  modify_production_config
+  send_customer_communication
+  ```
+
+**Cost threshold (USD):**
+- Auto-require approval if action cost > threshold
+- Example: $100.00
+- Any action costing more than threshold requires approval
+
+**Timeout (seconds):**
+- How long to wait for human decision
+- Example: 600 (10 minutes)
+- After timeout, action is blocked with `TimeoutError`
+
+**Default approvers (emails):**
+- Who should be notified for approvals
+- Comma-separated email list
+- Example:
+  ```
+  manager@company.com, security@company.com
+  ```
+- Receives email notifications for approval requests
+
+**Behavior:**
+- SDK creates approval request via platform
+- Blocks and waits for human decision
+- If approved, action executes
+- If rejected or timeout, raises error
+- Intervention is logged with type `APPROVAL_REQUIRED`
+
+#### Alert configuration
+
+Set up notifications when policy is triggered:
+
+**Alert emails:**
+- Email addresses to notify
+- Comma-separated
+- Example: `ops@company.com, cto@company.com`
+
+**Alert threshold (%):**
+- Notify when budget reaches X% of limit
+- Example: 80
+- Sends email when 80% of budget is consumed
+
+**Alert on failure:**
+- Checkbox to enable failure alerts
+- Sends email when action is blocked by this policy
+- Useful for monitoring security violations
+
+**Test alert button:**
+- Send test email to verify configuration
+- Click to send immediately
+- Check inbox for delivery
+
+### Policy precedence
+
+When multiple policies apply, **most restrictive wins**:
+
+1. **Run-specific** (highest priority)
+2. **Agent-specific**
+3. **Global** (lowest priority)
+
+**Example:**
+- Global policy: $10 run budget
+- Agent-specific policy: $5 run budget
+- Result: $5 limit applies (most restrictive)
+
+### Policy sync to SDK
+
+Policies sync to SDK automatically:
+
+1. SDK calls `PolicyEngine.enable_remote_sync()`
+2. Platform endpoint `/api/v1/policies/sync` returns enabled policies
+3. SDK caches locally
+4. Refreshes every 5 minutes (configurable)
+5. Most restrictive rules are merged and applied
+
+**Viewing synced policies:**
+- Check SDK logs for policy sync messages
+- See "Last Updated" in policy list
+- Monitor intervention logs for policy enforcement
+
+---
+
+## API Keys tab
+
+### API key list
+
+View all API keys for your organization:
+
+| Column | Description |
+|--------|-------------|
+| **Key Prefix** | First 12 characters (e.g., `as_a1b2c3d4...`) |
+| **Name** | Human-readable identifier (optional) |
+| **Created** | When key was generated |
+| **Last Used** | Most recent API call with this key |
+| **Status** | Active (green) or Inactive (gray) |
+
+**Actions per key:**
+- **Deactivate** - Disable key without deleting
+- **Activate** - Re-enable deactivated key
+- **Delete** - Permanently remove key (with confirmation)
+
+### Generate new API key
+
+Click **Generate New Key**:
+
+1. **Optional name** - Identifier for this key
+   - Example: "Production Agent", "Development", "CI/CD Pipeline"
+2. Click **Generate**
+3. **Copy immediately** - Key shown only once
+   - Format: `as_` + 32 hex characters
+   - Example: `as_a1b2c3d4e5f6789012345678901234ab`
+4. Store securely in:
+   - Password manager
+   - Secrets vault (HashiCorp Vault, AWS Secrets Manager)
+   - Environment variables (never in code)
+
+<Warning>
+**Keys are shown only once!** If you lose it, you must generate a new key. There is no recovery option.
+</Warning>
+
+**Copy confirmation:**
+- Checkbox: "I have copied the key"
+- Must check to close modal
+- Prevents accidental loss
+
+### Using API keys
+
+In SDK:
+
+```python
+from agent_sentinel import enable_remote_sync
+
+enable_remote_sync(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_a1b2c3d4e5f6789012345678901234ab",  # Your API key
+    agent_id="my-agent",
+    run_id="run-001"
+)
+```
+
+In API requests:
+
+```bash
+curl -H "Authorization: Bearer as_a1b2c3d4e5f6789012345678901234ab" \
+  https://platform.agentsentinel.dev/api/v1/runs
+```
+
+### Security best practices
+
+<Tip>
+**Rotate keys regularly**: Generate new keys every 90 days and delete old ones.
+</Tip>
+
+<Tip>
+**Use separate keys per environment**: Different keys for dev, staging, production.
+</Tip>
+
+<Warning>
+**Never commit keys to git**: Use environment variables or secrets management.
+</Warning>
+
+<Tip>
+**Monitor "Last Used"**: Keys not used in 90 days should be deleted.
+</Tip>
+
+### Troubleshooting API keys
+
+**"API key invalid"**
+- Check you copied full key including `as_` prefix
+- Verify key is Active (not deactivated)
+- Confirm you're in correct organization
+- Check key wasn't deleted
+
+**"Key not working after creation"**
+- May take up to 30 seconds to propagate
+- Verify you copied correctly (easy to truncate)
+- Test with simple API call:
+  ```bash
+  curl -H "Authorization: Bearer $KEY" \
+    https://platform.agentsentinel.dev/api/v1/users/me
+  ```
+
+---
+
+## Notifications tab
+
+### Channel status
+
+View configured notification channels:
+
+| Channel | Status | Actions |
+|---------|--------|---------|
+| **Email** | 🟢 Enabled | Configure, Test, Disable |
+| **Slack** | 🔴 Not configured | Set up |
+| **Webhooks** | 🔴 Not configured | Set up |
+| **PagerDuty** | 🟡 Coming soon | - |
+| **Discord** | 🟡 Coming soon | - |
+
+### Email notifications
+
+**Configuration:**
+- Email addresses (comma-separated)
+- Notification triggers:
+  - ☑️ Critical interventions (risk=critical)
+  - ☑️ Budget threshold reached (80%)
+  - ☑️ Budget exceeded
+  - ☑️ Approval requests (critical/high priority)
+  - ☑️ Policy violations
+  - ☑️ Agent failures (3+ consecutive errors)
+
+**Test email:**
+- Click "Send Test Email"
+- Check inbox for delivery
+- Verify formatting and content
+
+**Example email:**
+```
+Subject: [Agent Sentinel] Critical Intervention
+
+Agent "trading-bot" attempted dangerous action
+
+Action: delete_production_database
+Risk Level: CRITICAL
+Intervention: HARD_BLOCK
+Time: 2024-12-28 14:30:00 UTC
+
+Blast Radius: Prevented deletion of 1M+ customer records
+
+View Details: https://console.agentsentinel.dev/interventions/int_123
+```
+
+### Slack notifications (coming soon)
+
+**Setup:**
+1. Click "Set up Slack"
+2. Authorize Agent Sentinel app
+3. Choose channel (e.g., #agent-alerts)
+4. Configure triggers
+5. Test notification
+
+**Notification format:**
+```
+🚨 Critical Intervention
+
+Agent: trading-bot
+Action: delete_production_database
+Status: BLOCKED
+Risk: CRITICAL
+
+[View Details]
+```
+
+### Webhooks (coming soon)
+
+**Setup:**
+1. Enter webhook URL
+2. Choose events to send:
+   - Interventions
+   - Approvals
+   - Policy violations
+   - Budget alerts
+3. Configure secret for signature verification
+4. Test webhook
+
+**Payload format:**
+```json
+{
+  "event_type": "intervention_created",
+  "timestamp": "2024-12-28T14:30:00Z",
+  "data": {
+    "intervention_id": "int_123",
+    "type": "hard_block",
+    "action_name": "dangerous_action",
+    "risk_level": "critical",
+    "agent_id": "my-agent"
+  },
+  "signature": "sha256=..."
+}
+```
+
+### Critical escalation notice
+
+<Warning>
+**Critical interventions always notify**: Regardless of settings, critical-risk interventions always trigger notifications to prevent disasters.
+</Warning>
+
+---
+
+## Common workflows
+
+### Create production safety policy
+
+1. Go to **Policies** tab
+2. Click **Create Policy**
+3. Configure:
+   - Name: "Production Safety"
+   - Description: "Strict limits for production agents"
+   - Scope: Agent-specific → "production-agent"
+   - Session budget: $50
+   - Run budget: $5
+   - Denied actions:
+     ```
+     delete_database
+     drop_table
+     modify_production_config
+     ```
+   - Rate limits:
+     - api_call: 100 per 60s
+     - database_write: 10 per 60s
+4. Enable policy
+5. Test with agent
+
+### Set up approval workflow
+
+1. Go to **Policies** tab
+2. Create or edit policy
+3. Scroll to "Human Approval Settings"
+4. Configure:
+   - Required approval actions:
+     ```
+     transfer_funds
+     delete_user_data
+     ```
+   - Cost threshold: $100.00
+   - Timeout: 600 seconds
+   - Default approvers:
+     ```
+     manager@company.com, security@company.com
+     ```
+5. Go to **Notifications** tab
+6. Enable email for approval requests
+7. Save and test
+
+### Rotate API key
+
+1. Go to **API Keys** tab
+2. Click **Generate New Key**
+3. Name it with date: "Production Key 2024-12"
+4. Copy key
+5. Update SDK configuration:
+   ```python
+   # Old key
+   api_token="as_old_key_here"
+   # New key
+   api_token="as_new_key_copied_from_settings"
+   ```
+6. Deploy updated configuration
+7. Monitor "Last Used" on new key
+8. Once new key is active (within 24h), delete old key
+
+### Configure budget alerts
+
+1. Go to **Policies** tab
+2. Edit budget policy
+3. Scroll to "Alert Configuration"
+4. Set:
+   - Alert emails: `finance@company.com, engineering@company.com`
+   - Alert threshold: 80%
+   - Alert on failure: ✓
+5. Click **Test Alert**
+6. Verify email received
+7. Save policy
+
+---
+
+## Best practices
+
+<Tip>
+**Start with permissive policies**: Begin with high budgets and few denied actions, then tighten based on observed behavior.
+</Tip>
+
+<Tip>
+**Use descriptive policy names**: Include environment/purpose in name: "Prod Safety", "Dev Budget", "QA Rate Limits".
+</Tip>
+
+<Warning>
+**Test policies before production**: Create test agent and verify policy enforcement works as expected.
+</Warning>
+
+<Tip>
+**Separate keys per environment**: Never use same API key for dev, staging, and production.
+</Tip>
+
+<Tip>
+**Monitor policy effectiveness**: Review intervention logs to ensure policies catch issues without blocking legitimate actions.
+</Tip>
+
+## See also
+
+- [SDK Policies](/sdk/python/policies) - SDK-side policy configuration
+- [Platform Policies API](/platform/policies) - API documentation
+- [Interventions](/console/interventions) - View policy enforcement
+- [Approvals](/console/approvals) - Manage approval workflows

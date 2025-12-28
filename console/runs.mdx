@@ -1,0 +1,348 @@
+---
+title: "Runs Page"
+description: "View execution history, replay runs, and analyze determinism."
+---
+
+## Overview
+
+The **Runs Page** provides complete visibility into agent execution history. View run details, analyze action sequences, simulate replays at zero cost, and detect non-deterministic behavior.
+
+## Run registry
+
+The main view shows all runs with filters:
+
+### Filters
+
+**By status:**
+- **Running** - Currently executing (live updates)
+- **Completed** - Finished successfully
+- **Failed** - Encountered errors
+
+**By cost:**
+- **Min cost** - Show runs above cost threshold
+- Useful for finding expensive runs
+
+**By time window:**
+- **24 hours** - Recent runs
+- **7 days** - Last week
+- **30 days** - Last month
+- **All time** - Complete history
+
+**By agent:**
+- Filter by agent_id
+- Type to search and select
+
+### Run cards
+
+Each run displays:
+
+- **Run ID** - Unique identifier
+- **Agent** - Agent name (link to agent page)
+- **Status Badge** - Running (blue), Completed (green), Failed (red)
+- **Duration** - Execution time
+- **Actions** - Count of actions in run
+- **Cost** - Total USD spent
+- **Success Rate** - % of successful actions
+- **Started** - Timestamp
+- **Ended** - Timestamp (if completed)
+
+**Visual indicators:**
+- 🔵 **Running** - Animated pulse on status badge
+- 🟢 **Completed** - Static green badge
+- 🔴 **Failed** - Red badge with error icon
+
+### Critical intercepts section
+
+At the top, see **failed runs** that need attention:
+
+- Runs with errors
+- Runs exceeding budgets
+- Runs with high intervention rates
+- Sorted by recency
+
+Click to view details and debug.
+
+## Run details view
+
+Click any run to open the details view with 3 tabs:
+
+### Telemetry tab
+
+Shows complete action sequence:
+
+**Action list:**
+- Sequential order of execution
+- Action name
+- Inputs (expandable JSON)
+- Outputs (expandable JSON)
+- Cost (USD)
+- Duration (ms)
+- Outcome (success/error/blocked/replayed)
+- Timestamp
+
+**Features:**
+- **Search actions** - Find by name or content
+- **Filter by outcome** - Show only errors, successes, blocked
+- **Expand all** - View all inputs/outputs at once
+- **Copy JSON** - Copy any input/output to clipboard
+
+**Operation inspector sidebar:**
+
+Click any action to open inspector showing:
+- Full JSON inputs with syntax highlighting
+- Full JSON outputs with syntax highlighting
+- Metadata (UUID, timestamp, tags)
+- Error details (if failed)
+- Compliance metadata (if applicable)
+
+**Example action:**
+```json
+{
+  "action": "call_llm",
+  "inputs": {
+    "prompt": "What is 2+2?",
+    "model": "gpt-4o",
+    "max_tokens": 100
+  },
+  "outputs": {
+    "response": "2 + 2 equals 4.",
+    "tokens": 15,
+    "cost_usd": 0.0008
+  },
+  "duration_ns": 523000000,
+  "outcome": "success"
+}
+```
+
+**Link to Activity Ledger:**
+Click "View in Activity Ledger" to see all actions in filterable table.
+
+### Simulation tab
+
+**Zero-cost replay** - Re-execute the run using recorded outputs without calling external APIs.
+
+**How it works:**
+1. Click "Simulate Replay"
+2. Platform replays run action-by-action
+3. Uses cached outputs from original run
+4. Detects divergences (different inputs/outputs)
+5. Calculates potential cost savings
+
+**Replay results:**
+
+| Metric | Description |
+|--------|-------------|
+| **Original cost** | What the run cost originally |
+| **Replay cost** | Cost to replay (usually $0) |
+| **Savings** | USD saved by using replay |
+| **Divergences** | Count of mismatches |
+| **Match rate** | % of actions that matched |
+
+**Divergence details:**
+
+When replay diverges from original:
+
+- **Action name mismatch** - Different action was called
+- **Input mismatch** - Same action, different inputs
+- **Output mismatch** - Same inputs, different outputs (non-deterministic!)
+
+**Comparison table:**
+
+| Action | Original | Replay | Status |
+|--------|----------|--------|--------|
+| call_llm | input: "Hello" | input: "Hello" | ✅ Match |
+| call_llm | output: "Hi there!" | output: "Hi there!" | ✅ Match |
+| generate_id | output: "uuid-123" | output: "uuid-456" | ❌ Diverged |
+
+**Use cases:**
+- **Debugging** - Replay failed runs to understand what happened
+- **Testing** - Replay with different logic to test fixes
+- **Cost savings** - Use replay for development/testing without API costs
+- **Compliance** - Demonstrate reproducibility
+
+### Determinism tab
+
+**Automated analysis** of non-deterministic behavior.
+
+**Determinism score:**
+
+- **0-100 scale** (higher is better)
+- Color-coded progress bar:
+  - 🟢 **90-100** - Highly deterministic
+  - 🟡 **70-89** - Moderately deterministic
+  - 🟠 **50-69** - Low determinism
+  - 🔴 **0-49** - Highly non-deterministic
+
+**What's analyzed:**
+
+Platform scans for common non-deterministic patterns:
+- **Timestamps** - Current time in outputs
+- **Random values** - Random numbers, UUIDs
+- **External state** - Database queries, API calls without idempotency
+- **Floating point** - Precision differences
+- **Ordering** - Unordered collections (sets, dicts in Python < 3.7)
+
+**Issues found:**
+
+List of detected issues with:
+- **Action name** - Where issue occurred
+- **Issue type** - What kind of non-determinism
+- **Severity** - Critical, High, Medium, Low
+- **Description** - What was detected
+- **Line number** - If applicable
+
+**Example:**
+```
+Issue: Timestamp in output
+Action: generate_report
+Severity: High
+Description: Output contains current timestamp ("2024-12-28T14:30:00Z")
+  which will differ on replay.
+Recommendation: Pass timestamp as input parameter instead.
+```
+
+**Recommendations:**
+
+Platform provides actionable advice:
+- How to fix each issue
+- Code snippets showing before/after
+- Links to documentation
+- Best practices for determinism
+
+**Benefits of high determinism:**
+- Easier debugging (reproducible errors)
+- Lower testing costs (replay instead of re-execute)
+- Compliance (demonstrate reproducibility)
+- Reliability (predictable behavior)
+
+## Real-time updates
+
+**Live run monitoring:**
+
+When viewing a **running** run:
+- Action list updates in real-time as actions complete
+- Stats refresh (cost, duration, action count)
+- Progress indicator shows completion %
+- Notifications when run completes or fails
+
+**WebSocket events:**
+- `run_created` - New run appears in list
+- `action_created` - New action appears in telemetry
+- `run_completed` - Status changes to completed
+- `run_failed` - Status changes to failed
+
+## Common workflows
+
+### Debug a failed run
+
+1. Go to **Critical Intercepts** section
+2. Click failed run
+3. Open **Telemetry** tab
+4. Find first failed action (red badge)
+5. Open operation inspector
+6. Review error details and inputs
+7. Identify root cause
+8. Fix agent logic
+9. Use **Simulation** tab to test fix with replay
+
+### Analyze high-cost runs
+
+1. Filter by min cost > $10
+2. Sort by cost (descending)
+3. For each expensive run:
+   - Open telemetry
+   - Find most expensive actions
+   - Identify optimization opportunities
+4. Implement caching, cheaper models, or rate limiting
+5. Compare costs before/after
+
+### Test determinism
+
+1. Select a completed run
+2. Go to **Simulation** tab
+3. Click "Simulate Replay"
+4. Review divergences
+5. Go to **Determinism** tab
+6. Read recommendations
+7. Fix non-deterministic code
+8. Re-run and verify score improves
+
+### Review agent behavior
+
+1. Filter by agent_id
+2. Sort by recency
+3. Review recent runs for patterns:
+   - Success rates trending down?
+   - Costs increasing?
+   - New error types appearing?
+4. Investigate anomalies
+5. Adjust agent logic or policies
+
+## Export runs
+
+Click **Export** to download run data:
+
+1. Respects current filters
+2. Choose format: CSV, JSON, JSONL
+3. Includes runs and all actions
+4. Use for analysis, reporting, compliance
+
+## Best practices
+
+<Tip>
+**Monitor failed runs daily**: Check Critical Intercepts section daily to catch issues early.
+</Tip>
+
+<Tip>
+**Use replay for debugging**: Replay is free and gives identical behavior - perfect for debugging without re-running expensive LLM calls.
+</Tip>
+
+<Warning>
+**Non-determinism hurts debugging**: Runs with determinism scores < 70 are hard to debug. Prioritize fixing non-deterministic code.
+</Warning>
+
+<Tip>
+**Archive old runs**: Runs older than 90 days may be archived - export important runs for long-term storage.
+</Tip>
+
+## Keyboard shortcuts
+
+- `r` - Simulate replay (when viewing run)
+- `t` - Switch to Telemetry tab
+- `s` - Switch to Simulation tab
+- `d` - Switch to Determinism tab
+- `/` - Focus search
+
+## Troubleshooting
+
+### "Replay not available"
+
+- Replay requires original run to be complete
+- Outputs must be stored (check retention policy)
+- Some actions may not support replay (side effects)
+
+### "Can't find my run"
+
+- Check time window filter (may be outside range)
+- Verify agent_id is correct
+- Check if run was in different organization
+- Try "All time" filter
+
+### "Determinism score seems wrong"
+
+- Score is based on automated analysis - may miss issues
+- Use Simulation tab to manually check divergences
+- Some non-determinism is acceptable (e.g., timestamps in logs)
+
+### "Action inputs/outputs not showing"
+
+- May be too large (> 1MB) - check raw data
+- May contain binary data - not displayable
+- Check if PII redaction is enabled
+
+## See also
+
+- [Platform Runs API](/platform/runs) - API documentation
+- [Platform Replay](/platform/replay) - Replay endpoint details
+- [Activity Ledger](/console/ledger) - View actions across all runs
+- [Agents](/console/agents) - View runs by agent

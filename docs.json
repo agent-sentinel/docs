@@ -48,6 +48,12 @@
               "sdk/python/policies",
               "sdk/python/remote-sync",
               "sdk/python/replay",
+              "sdk/python/interventions",
+              "sdk/python/approvals",
+              "sdk/python/mcp",
+              "sdk/python/errors",
+              "sdk/python/llm-integrations",
+              "sdk/python/framework-integrations",
               "sdk/python/compliance"
             ]
           },
@@ -59,10 +65,30 @@
               "platform/auth",
               "platform/ingest",
               "platform/runs",
+              "platform/ledger",
+              "platform/agents",
+              "platform/interventions",
+              "platform/approvals",
               "platform/policies",
               "platform/stats",
               "platform/replay",
+              "platform/mcp",
+              "platform/websockets",
               "platform/compliance"
+            ]
+          },
+          {
+            "group": "Web Console",
+            "pages": [
+              "console/overview",
+              "console/quickstart",
+              "console/interventions",
+              "console/approvals",
+              "console/runs",
+              "console/ledger",
+              "console/agents",
+              "console/analytics",
+              "console/settings"
             ]
           }
         ]
@@ -107,6 +133,9 @@
       "label": "API Reference",
       "href": "/api-reference/introduction"
     }
+  },
+  "modeToggle": {
+    "default": "dark"
   },
   "contextual": {
     "options": [

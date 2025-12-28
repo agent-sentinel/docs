@@ -1,0 +1,355 @@
+---
+title: "Error Handling"
+description: "Understand Agent Sentinel's error types and how to handle them gracefully."
+---
+
+## Error hierarchy
+
+All Agent Sentinel errors inherit from `AgentSentinelError`:
+
+```python
+from agent_sentinel import (
+    AgentSentinelError,
+    BudgetExceededError,
+    PolicyViolationError,
+    ReplayDivergenceError,
+    NetworkError,
+    SyncError,
+    TimeoutError,
+    ConfigurationError,
+)
+```
+
+## Error structure
+
+Every error includes:
+
+- **Message**: Human-readable description
+- **Error code**: Machine-readable identifier
+- **Details**: Additional context (dict)
+- **Recoverable flag**: Whether the operation can be retried
+
+```python
+try:
+    # Some operation
+    ...
+except AgentSentinelError as e:
+    print(f"Error: {e.message}")
+    print(f"Code: {e.error_code}")
+    print(f"Details: {e.details}")
+    print(f"Recoverable: {e.recoverable}")
+
+    # Serialize for logging
+    error_dict = e.to_dict()
+```
+
+## BudgetExceededError
+
+Raised when cost limits are exceeded:
+
+```python
+from agent_sentinel import BudgetExceededError, guarded_action, PolicyEngine
+
+PolicyEngine.configure(run_budget=1.0)
+
+@guarded_action(name="expensive_call", cost_usd=0.60)
+def call_api():
+    return "result"
+
+try:
+    call_api()  # First call: $0.60 spent
+    call_api()  # Second call: Would exceed $1.00 budget → raises BudgetExceededError
+except BudgetExceededError as e:
+    print(f"Budget exceeded: spent ${e.details['spent']}, limit ${e.details['limit']}")
+    print(f"Budget type: {e.details['budget_type']}")  # "run", "session", or "action"
+
+    # Graceful degradation
+    if e.details['budget_type'] == 'action':
+        # Switch to cheaper model
+        use_cheaper_model()
+    elif e.details['budget_type'] == 'run':
+        # Stop the run
+        terminate_run()
+```
+
+### Details
+
+- `spent` (float): Current spend amount
+- `limit` (float): Budget limit
+- `budget_type` (str): "session", "run", or "action"
+- **Recoverable**: `False` (budget is truly exceeded)
+
+## PolicyViolationError
+
+Raised when an action violates policy rules:
+
+```python
+from agent_sentinel import PolicyViolationError, guarded_action, PolicyEngine
+
+PolicyEngine.configure(
+    denied_actions=["delete_production_db"],
+    allowed_actions=["read_db", "write_db"],  # Allowlist mode
+)
+
+@guarded_action(name="delete_production_db")
+def dangerous_action():
+    return "never executed"
+
+try:
+    dangerous_action()
+except PolicyViolationError as e:
+    print(f"Policy violation: {e.message}")
+    print(f"Rule: {e.details['policy_rule']}")  # "denied_action" or "allowlist" or "rate_limit"
+    print(f"Action: {e.details['action_name']}")
+
+    # Log security incident
+    log_security_event(
+        action=e.details['action_name'],
+        rule=e.details['policy_rule'],
+        agent_id=get_agent_id()
+    )
+```
+
+### Details
+
+- `policy_rule` (str): Which rule was violated ("denied_action", "allowlist", "rate_limit")
+- `action_name` (str): Name of the blocked action
+- **Recoverable**: `False` (policy is enforced)
+
+## ReplayDivergenceError
+
+Raised when replay mode detects non-deterministic behavior:
+
+```python
+from agent_sentinel import ReplayDivergenceError, replay_mode
+
+try:
+    with replay_mode(run_id="run-123", strict=True):
+        # If agent behavior diverges from recording, raises ReplayDivergenceError
+        run_agent()
+except ReplayDivergenceError as e:
+    print(f"Divergence detected: {e.message}")
+    print(f"Expected: {e.details['expected']}")
+    print(f"Actual: {e.details['actual']}")
+    print(f"Action: {e.details['action_name']}")
+
+    # Analyze divergence
+    analyze_non_determinism(e.details)
+```
+
+### Details
+
+- `action_name` (str): Action where divergence occurred
+- `expected` (any): Expected value from recording
+- `actual` (any): Actual value from replay
+- **Recoverable**: `False` (indicates non-determinism)
+
+## NetworkError
+
+Raised on HTTP/network failures when communicating with platform:
+
+```python
+from agent_sentinel import NetworkError, enable_remote_sync
+
+try:
+    enable_remote_sync(
+        platform_url="https://platform.agentsentinel.dev",
+        api_token="as_invalid_token",
+    )
+except NetworkError as e:
+    print(f"Network error: {e.message}")
+    print(f"Status code: {e.details['status_code']}")
+    print(f"Endpoint: {e.details['endpoint']}")
+    print(f"Recoverable: {e.recoverable}")  # True for 5xx, False for 4xx
+
+    if e.recoverable:
+        # Retry with backoff
+        retry_with_backoff(enable_remote_sync, ...)
+    else:
+        # Authentication or configuration issue - don't retry
+        log_error("Invalid API token or endpoint")
+```
+
+### Details
+
+- `status_code` (int): HTTP status code
+- `endpoint` (str): API endpoint that failed
+- **Recoverable**: `True` for 5xx (server errors), `False` for 4xx (client errors)
+
+## SyncError
+
+Raised when background sync fails to upload telemetry:
+
+```python
+from agent_sentinel import SyncError
+
+try:
+    # Sync errors are typically raised internally and logged
+    # but you can handle them if using manual flush
+    sync_service.flush_now()
+except SyncError as e:
+    print(f"Sync failed: {e.message}")
+    print(f"Batch size: {e.details['batch_size']}")
+    print(f"Retry count: {e.details['retry_count']}")
+    print(f"Recoverable: {e.recoverable}")  # Always True
+
+    # Background sync will automatically retry
+    # No action needed - just log for visibility
+    log_warning(f"Sync retry {e.details['retry_count']}")
+```
+
+### Details
+
+- `batch_size` (int): Number of records that failed to sync
+- `retry_count` (int): Current retry attempt
+- **Recoverable**: `True` (sync will be retried automatically)
+
+## TimeoutError
+
+Raised when an operation exceeds timeout:
+
+```python
+from agent_sentinel import TimeoutError, ApprovalClient
+
+client = ApprovalClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+try:
+    response = client.request_approval_sync(
+        action_name="expensive_operation",
+        timeout_seconds=60,  # 1 minute timeout
+        # ...
+    )
+except TimeoutError as e:
+    print(f"Timeout: {e.message}")
+    print(f"Operation: {e.details['operation']}")
+    print(f"Timeout: {e.details['timeout_seconds']}s")
+    print(f"Recoverable: {e.recoverable}")  # True
+
+    # Handle timeout gracefully
+    if e.details['operation'] == 'approval':
+        # Maybe extend timeout or proceed without approval
+        log_warning("Approval timed out - using default policy")
+```
+
+### Details
+
+- `timeout_seconds` (int): Timeout duration
+- `operation` (str): What timed out (e.g., "approval", "policy_sync")
+- **Recoverable**: `True` (can retry with longer timeout)
+
+## ConfigurationError
+
+Raised on invalid configuration:
+
+```python
+from agent_sentinel import ConfigurationError, PolicyEngine
+
+try:
+    PolicyEngine.configure(
+        session_budget=-10.0,  # Invalid: negative budget
+    )
+except ConfigurationError as e:
+    print(f"Configuration error: {e.message}")
+    print(f"Config key: {e.details['config_key']}")
+    print(f"Invalid value: {e.details.get('value')}")
+    print(f"Recoverable: {e.recoverable}")  # False
+
+    # Fix configuration
+    PolicyEngine.configure(session_budget=10.0)
+```
+
+### Details
+
+- `config_key` (str): Configuration parameter that's invalid
+- `value` (any): Invalid value (if applicable)
+- **Recoverable**: `False` (must fix configuration)
+
+## Handling errors gracefully
+
+### Pattern: Graceful degradation
+
+```python
+from agent_sentinel import BudgetExceededError, guarded_action
+
+@guarded_action(name="premium_llm", cost_usd=0.50)
+def call_premium_llm(prompt):
+    return premium_model.generate(prompt)
+
+@guarded_action(name="cheap_llm", cost_usd=0.01)
+def call_cheap_llm(prompt):
+    return cheap_model.generate(prompt)
+
+def generate_with_fallback(prompt):
+    try:
+        return call_premium_llm(prompt)
+    except BudgetExceededError:
+        # Degrade to cheaper model
+        logger.warning("Budget exceeded, using cheap model")
+        return call_cheap_llm(prompt)
+```
+
+### Pattern: Retry with backoff
+
+```python
+from agent_sentinel import NetworkError
+import time
+
+def call_with_retry(func, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except NetworkError as e:
+            if not e.recoverable or attempt == max_retries - 1:
+                raise
+            # Exponential backoff
+            wait = (2 ** attempt) + (random.random() * 0.1)
+            time.sleep(wait)
+```
+
+### Pattern: Error monitoring
+
+```python
+from agent_sentinel import AgentSentinelError
+
+def monitor_errors(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except AgentSentinelError as e:
+            # Send to monitoring service
+            monitoring.track_error(
+                error_code=e.error_code,
+                message=e.message,
+                details=e.details,
+                recoverable=e.recoverable,
+            )
+            raise
+    return wrapper
+```
+
+## Best practices
+
+<Tip>
+**Always handle BudgetExceededError**: Implement graceful degradation (cheaper models, reduced scope) rather than crashing.
+</Tip>
+
+<Tip>
+**Log PolicyViolationError as security events**: These indicate attempted policy violations and should be monitored.
+</Tip>
+
+<Warning>
+**Don't retry non-recoverable errors**: Check `error.recoverable` before retrying. Configuration errors and policy violations won't succeed on retry.
+</Warning>
+
+<Tip>
+**Use error details for context**: Error details contain rich context - use them for debugging, alerting, and graceful degradation logic.
+</Tip>
+
+## See also
+
+- [Policies](/sdk/python/policies) - Configure policies to prevent errors
+- [Remote Sync](/sdk/python/remote-sync) - Network error handling
+- [Replay](/sdk/python/replay) - Divergence error handling

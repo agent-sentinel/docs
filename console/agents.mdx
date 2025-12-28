@@ -1,0 +1,363 @@
+---
+title: "Agents Page"
+description: "Discover and manage your agent fleet with automatic registration and performance metrics."
+---
+
+## Overview
+
+The **Agents Page** provides a centralized view of all agents in your organization. Agents are **automatically discovered** when they send their first run - no manual configuration required.
+
+## Agent discovery
+
+### How it works
+
+1. Agent sends first run via SDK with `agent_id`
+2. Platform automatically creates agent record
+3. Metrics begin calculating in real-time
+4. Agent appears in Agents list
+
+**No setup required** - just instrument your agents with the SDK and they self-register.
+
+## Agent list view
+
+Main table shows all discovered agents:
+
+| Column | Description |
+|--------|-------------|
+| **Agent ID** | Unique identifier (click to view details) |
+| **Display Name** | Human-readable name (editable) |
+| **Description** | What the agent does (editable) |
+| **Total Runs** | Lifetime run count |
+| **Total Cost** | Lifetime USD spent |
+| **Success Rate** | % of successful actions |
+| **Intervention Rate** | % of actions blocked by policies |
+| **Last Seen** | Timestamp of most recent run |
+| **Status** | Active (green) or Inactive (gray) |
+
+### Sorting
+
+Sort by multiple fields:
+- **Last Seen** - Most recently active
+- **First Seen** - Oldest agents
+- **Total Runs** - Most active agents
+- **Total Cost** - Most expensive agents
+- **Intervention Rate** - Most blocked agents
+- **Success Rate** - Most/least reliable agents
+
+Default: Last seen (descending).
+
+### Filtering
+
+- **Agent ID** - Partial match search
+- **Status** - Active vs inactive
+- **Organization** - (if multi-org enabled)
+
+### Agent status
+
+- **Active** (🟢) - Sent data in last 7 days
+- **Inactive** (⚫) - No data in 7+ days
+
+## Agent details view
+
+Click any agent to see comprehensive statistics:
+
+### Overview section
+
+**Basic information:**
+- **Agent ID** - Unique identifier (cannot be changed)
+- **Display Name** - Human-readable name (editable)
+- **Description** - What the agent does (editable)
+- **Organization** - Which org owns this agent
+- **First Seen** - When agent was first discovered
+- **Last Seen** - Most recent activity
+- **Days Active** - Count of unique days with runs
+- **Status** - Active/Inactive
+
+**Edit metadata:**
+- Click "Edit" button
+- Update display name and description
+- Save changes
+- Note: Agent ID cannot be changed
+
+### Statistics overview
+
+**Activity metrics:**
+- **Total Runs** - Lifetime run count
+- **Total Actions** - Lifetime action count
+- **Total Cost** - Lifetime USD spent
+- **Avg Cost per Run** - Mean cost per run
+- **Avg Actions per Run** - Mean actions per run
+
+**Performance metrics:**
+- **Success Rate** - % of successful actions
+- **Error Rate** - % of failed actions
+- **Avg Duration per Action** - Mean execution time
+
+**Intervention metrics:**
+- **Intervention Rate** - % of actions that triggered interventions
+- **Interventions Count** - Total interventions
+- **High-Risk Blocks** - Critical/high-risk interventions
+
+**Approval metrics:**
+- **Total Approvals** - Lifetime approval requests
+- **Pending Approvals** - Currently awaiting decision
+- **Approval Rate** - % of requests approved
+- **Avg Decision Time** - Mean time from request to decision
+
+### Recent activity
+
+Three time-window breakdowns:
+
+**Last 24 hours:**
+- Runs: X
+- Actions: Y
+- Cost: $Z
+
+**Last 7 days:**
+- Runs: X
+- Actions: Y
+- Cost: $Z
+
+**Last 30 days:**
+- Runs: X
+- Actions: Y
+- Cost: $Z
+
+### Activity timeline
+
+Visual timeline showing:
+- Daily run counts (bar chart)
+- Daily costs (line chart overlaid)
+- 30-day rolling window
+- Hover for exact values
+
+**Insights:**
+- Spot trends (increasing/decreasing activity)
+- Identify spikes or anomalies
+- Correlate with deployments
+
+### Recent runs list
+
+Table of last 10 runs:
+- Run ID (link to run details)
+- Status (completed/failed/running)
+- Cost
+- Actions count
+- Duration
+- Timestamp
+
+Click "View All Runs" to filter Runs page by this agent.
+
+### Top actions
+
+List of most frequent action types:
+- Action name
+- Count (how many times called)
+- Total cost
+- Avg cost per call
+- Success rate
+
+**Sorted by:** Count (descending)
+
+### Cost breakdown
+
+Pie chart showing:
+- Cost distribution by action type
+- Hover for exact amounts
+- Click slice to filter ledger by that action
+
+### Interventions summary
+
+If agent has interventions:
+- Total interventions
+- Breakdown by type (hard_block, rate_limited, etc.)
+- Recent interventions list (last 5)
+- Link to filter Interventions page by this agent
+
+### Approvals summary
+
+If agent has approval requests:
+- Total approval requests
+- Pending count
+- Approval rate
+- Recent approvals list (last 5)
+- Link to filter Approvals page by this agent
+
+## Quick actions
+
+From agent details:
+
+**View filtered data:**
+- **View Runs** - Opens Runs page filtered by this agent
+- **View Actions** - Opens Activity Ledger filtered by this agent
+- **View Interventions** - Opens Interventions page filtered by this agent
+- **View Approvals** - Opens Approvals page filtered by this agent
+
+**Edit agent:**
+- **Edit Metadata** - Update display name and description
+- **Archive Agent** - Hide from active list (future feature)
+
+**Export data:**
+- **Export Stats** - Download agent statistics as JSON
+- **Export Activity** - Download all actions for this agent
+
+## Common workflows
+
+### Identify high-cost agents
+
+1. Sort by "Total Cost" (descending)
+2. Review top 5 agents
+3. For each:
+   - Click to view details
+   - Check "Top Actions" section
+   - Identify expensive action types
+   - Review "Cost Breakdown" pie chart
+4. Optimize expensive actions:
+   - Implement caching
+   - Use cheaper models
+   - Add rate limiting
+
+### Monitor agent health
+
+1. Sort by "Success Rate" (ascending)
+2. Find agents with low success rates (< 90%)
+3. For each:
+   - Click to view details
+   - Review recent runs
+   - Filter errors in Activity Ledger
+   - Identify common error patterns
+4. Fix root causes
+
+### Review intervention patterns
+
+1. Sort by "Intervention Rate" (descending)
+2. Find agents with high intervention rates (> 5%)
+3. For each:
+   - View interventions summary
+   - Check what's being blocked
+   - Determine if:
+     - **Agent is misbehaving** - Fix agent logic
+     - **Policies are too strict** - Adjust policies
+4. Take corrective action
+
+### Audit agent activity
+
+1. Select agent
+2. View "Recent Activity" section
+3. Check for anomalies:
+   - Sudden cost spikes
+   - Drop in success rate
+   - Increase in intervention rate
+4. Investigate using filtered views (runs, actions, interventions)
+
+### Set up new agent
+
+1. Instrument agent code with SDK:
+   ```python
+   enable_remote_sync(
+       platform_url="...",
+       api_token="...",
+       agent_id="new-agent",  # Choose unique ID
+       run_id="run-001"
+   )
+   ```
+2. Run agent once
+3. Return to Agents page - see agent auto-discovered
+4. Click agent
+5. Edit metadata:
+   - Display Name: "Customer Support Bot"
+   - Description: "Answers customer questions via email"
+6. Save
+
+## Best practices
+
+<Tip>
+**Use descriptive agent_id values**: Choose meaningful IDs like "customer-support-prod" instead of "agent1". Agent IDs cannot be changed.
+</Tip>
+
+<Tip>
+**Add display names immediately**: When a new agent appears, edit it to add a human-readable display name and description.
+</Tip>
+
+<Tip>
+**Monitor intervention rates**: Agents with intervention rates > 10% need attention - either agent logic or policies should be adjusted.
+</Tip>
+
+<Warning>
+**Low success rates indicate problems**: If success rate drops below 80%, investigate immediately - the agent may be broken.
+</Warning>
+
+<Tip>
+**Review top actions regularly**: Understanding which actions are most frequent helps optimize costs and identify bottlenecks.
+</Tip>
+
+## Metrics explained
+
+### Success rate
+
+```
+Success Rate = (Successful Actions / Total Actions) × 100
+```
+
+- **90-100%**: Excellent - agent is reliable
+- **70-89%**: Good - some errors expected
+- **50-69%**: Poor - investigate errors
+- **< 50%**: Critical - agent is broken
+
+### Intervention rate
+
+```
+Intervention Rate = (Interventions / Total Actions) × 100
+```
+
+- **0-2%**: Normal - occasional policy blocks
+- **3-5%**: Elevated - review policies
+- **6-10%**: High - agent or policies need adjustment
+- **> 10%**: Critical - major mismatch between agent behavior and policies
+
+### Approval rate
+
+```
+Approval Rate = (Approved Requests / Total Requests) × 100
+```
+
+- **80-100%**: Good - agent requests appropriate actions
+- **60-79%**: Moderate - some rejections expected
+- **40-59%**: Poor - agent requesting inappropriate actions
+- **< 40%**: Critical - review agent logic
+
+## Troubleshooting
+
+### "Agent not appearing"
+
+- Verify agent has sent at least one run
+- Check `agent_id` in SDK configuration
+- Confirm `enable_remote_sync()` is called
+- Check organization selector (may be in different org)
+
+### "Stats not updating"
+
+- Stats update every 5 minutes
+- Refresh page to see latest data
+- Check if agent has recent runs (Last Seen)
+- Verify WebSocket connection (should show REALTIME)
+
+### "Can't edit agent ID"
+
+- Agent IDs are permanent (set on first run)
+- Only display name and description are editable
+- To change ID, create a new agent with different `agent_id`
+
+### "Intervention rate seems high"
+
+- Review "Interventions Summary" section
+- Check which actions are being blocked
+- Determine if policies are too strict or agent needs fixes
+- Link to Interventions page for full details
+
+## See also
+
+- [Platform Agents API](/platform/agents) - API documentation
+- [Runs](/console/runs) - View agent execution history
+- [Activity Ledger](/console/ledger) - Filter actions by agent
+- [Interventions](/console/interventions) - Policy enforcement by agent

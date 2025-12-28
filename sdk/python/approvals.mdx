@@ -1,0 +1,256 @@
+---
+title: "Approval Workflows"
+description: "Implement human-in-the-loop approval workflows for sensitive agent actions."
+---
+
+## Overview
+
+The Approval Inbox enables human-in-the-loop workflows where sensitive actions require explicit human approval before execution. This is critical for:
+
+- **High-risk operations**: Database modifications, fund transfers, user data access
+- **EU AI Act compliance**: Article 14 human oversight requirements
+- **Cost control**: Expensive operations requiring manager approval
+- **Safety**: Actions with potential for harm
+
+## Quick start
+
+### 1. Mark actions as requiring approval
+
+```python
+from agent_sentinel import guarded_action
+
+@guarded_action(
+    name="transfer_funds",
+    cost_usd=0.10,
+    requires_human_approval=True,
+    approval_description="Transfer funds between customer accounts",
+)
+def transfer_funds(from_acct: str, to_acct: str, amount: float):
+    # This will block until human approves/rejects
+    return transfer_service.execute(from_acct, to_acct, amount)
+```
+
+### 2. Configure approval client (platform integration)
+
+```python
+from agent_sentinel import enable_remote_sync
+
+enable_remote_sync(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+    agent_id="payment-agent",
+    run_id="run-123",
+)
+```
+
+### 3. Humans review in web console
+
+Approvers navigate to **Approvals** page and see pending requests with:
+- Action description and context
+- Risk level and priority
+- Estimated cost
+- Input parameters
+- Agent intent
+
+They can:
+- **Approve** (with optional notes)
+- **Reject** (with reason)
+- **Request more info** (agent provides additional context)
+
+## Approval priorities
+
+Control urgency of approval requests:
+
+```python
+from agent_sentinel import ApprovalClient, Priority
+
+client = ApprovalClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+# Critical priority - notify immediately
+response = client.request_approval_sync(
+    action_name="delete_customer_data",
+    description="Delete all data for customer #12345",
+    agent_id="data-agent",
+    run_id="run-456",
+    priority=Priority.CRITICAL,  # CRITICAL, HIGH, MEDIUM, LOW
+    estimated_cost_usd=0.0,
+    timeout_seconds=300,
+    action_inputs={"customer_id": 12345},
+)
+```
+
+## Risk levels
+
+Classify actions by risk:
+
+```python
+from agent_sentinel import ApprovalClient, RiskLevel
+
+response = client.request_approval_sync(
+    action_name="modify_pricing",
+    description="Update product pricing in production",
+    risk_level=RiskLevel.HIGH,  # CRITICAL, HIGH, MEDIUM, LOW, MINIMAL
+    # ... other params
+)
+```
+
+## Handling approval responses
+
+```python
+from agent_sentinel import ApprovalClient, ApprovalStatus
+
+client = ApprovalClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+response = client.request_approval_sync(
+    action_name="execute_trade",
+    description="Execute trade: Buy 100 shares AAPL",
+    agent_id="trading-agent",
+    run_id="run-789",
+    estimated_cost_usd=15000.0,
+    timeout_seconds=600,  # 10 minute timeout
+    action_inputs={"symbol": "AAPL", "quantity": 100, "side": "BUY"},
+)
+
+if response.status == ApprovalStatus.APPROVED:
+    print(f"Approved by: {response.approver_email}")
+    print(f"Notes: {response.approver_notes}")
+    # Execute the action
+    execute_trade(...)
+elif response.status == ApprovalStatus.REJECTED:
+    print(f"Rejected by: {response.approver_email}")
+    print(f"Reason: {response.approver_notes}")
+    # Handle rejection
+elif response.status == ApprovalStatus.EXPIRED:
+    print("Approval timed out - no decision within timeout window")
+    # Handle timeout
+elif response.status == ApprovalStatus.INFO_REQUESTED:
+    print("Approver requested additional information")
+    # Respond with more context
+    client.respond_to_info_request(
+        approval_id=response.approval_id,
+        response_text="Additional context: This trade is part of rebalancing strategy..."
+    )
+```
+
+## Async approval workflow
+
+For async agents, use async methods:
+
+```python
+from agent_sentinel import ApprovalClient
+
+client = ApprovalClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key_here",
+)
+
+async def execute_with_approval():
+    response = await client.request_approval_async(
+        action_name="send_customer_email",
+        description="Send promotional email to 10,000 customers",
+        agent_id="email-agent",
+        run_id="run-999",
+        estimated_cost_usd=50.0,
+        timeout_seconds=3600,  # 1 hour
+    )
+
+    if response.status == ApprovalStatus.APPROVED:
+        await send_bulk_email(...)
+```
+
+## Canceling pending approvals
+
+If circumstances change, cancel pending requests:
+
+```python
+client.cancel_approval(approval_id="approval-123")
+```
+
+## Policy-based approval rules
+
+Configure which actions require approval via policies:
+
+```python
+from agent_sentinel import PolicyEngine
+
+PolicyEngine.configure(
+    approval_required_actions=["delete_user", "modify_prices", "transfer_funds"],
+    approval_cost_threshold=100.0,  # Auto-require approval if cost > $100
+    approval_timeout_seconds=600,
+    approval_default_approvers=["security@company.com", "manager@company.com"],
+)
+```
+
+## Approval statistics
+
+View approval metrics via platform:
+
+```bash
+GET /api/v1/approvals/stats
+```
+
+Returns:
+- Total pending approvals
+- Average decision time
+- Approval vs rejection rate
+- Counts by priority/risk level
+
+## Custom approval handlers (for custom UI)
+
+If not using the web console, implement a custom approval handler:
+
+```python
+from agent_sentinel import HumanApprovalHandler, ApprovalRequest, ApprovalResponse, ApprovalStatus
+
+def my_approval_handler(request: ApprovalRequest) -> ApprovalResponse:
+    # Send to Slack, custom UI, etc.
+    slack_response = send_slack_approval_request(
+        channel="#approvals",
+        action=request.action_name,
+        description=request.description,
+        cost=request.estimated_cost_usd,
+    )
+
+    # Wait for human response (blocking)
+    decision = wait_for_slack_response(slack_response.ts)
+
+    return ApprovalResponse(
+        request_id=request.request_id,
+        status=ApprovalStatus.APPROVED if decision.approved else ApprovalStatus.REJECTED,
+        approver_email=decision.approver_email,
+        notes=decision.notes,
+    )
+
+# Register handler
+HumanApprovalHandler.set_approval_handler(my_approval_handler)
+```
+
+## Best practices
+
+<Tip>
+**Set appropriate timeouts**: Critical actions should have short timeouts (5-10 min), while less urgent actions can have longer timeouts (1-24 hours).
+</Tip>
+
+<Tip>
+**Use risk levels**: Classify actions by risk to help approvers prioritize. Critical-risk items should notify immediately.
+</Tip>
+
+<Warning>
+**Handle timeouts gracefully**: Always handle `EXPIRED` status - don't assume approvals will be granted within the timeout window.
+</Warning>
+
+<Tip>
+**Provide context**: Include detailed descriptions and input parameters so approvers can make informed decisions without needing to ask for more info.
+</Tip>
+
+## See also
+
+- [Interventions](/sdk/python/interventions) - Track blocked and escalated actions
+- [Compliance](/sdk/python/compliance) - EU AI Act Article 14 human oversight
+- [Policies](/sdk/python/policies) - Configure approval rules

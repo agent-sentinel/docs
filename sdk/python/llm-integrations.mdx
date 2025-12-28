@@ -1,0 +1,339 @@
+---
+title: "LLM Integrations"
+description: "Automatically track LLM API calls with transparent instrumentation for OpenAI, Anthropic, Grok, and Gemini."
+---
+
+## Overview
+
+Agent Sentinel provides **transparent instrumentation** for major LLM providers. Simply call `instrument_<provider>()` once, and all LLM API calls are automatically tracked with:
+
+- Token usage (input and output tokens)
+- Costs (calculated from latest pricing data)
+- Duration and latency
+- Model information
+- Request/response metadata
+
+No code changes required - just instrument and go.
+
+## Supported providers
+
+- **OpenAI** (GPT-3.5, GPT-4, GPT-4o, o1)
+- **Anthropic** (Claude 3 Opus, Sonnet, Haiku, Claude 3.5)
+- **xAI/Grok** (Grok models)
+- **Google Gemini** (Gemini models)
+
+## OpenAI instrumentation
+
+```python
+from agent_sentinel.integrations import instrument_openai
+from openai import OpenAI
+
+# Instrument OpenAI (one-time setup)
+instrument_openai()
+
+# Use OpenAI normally - automatically tracked
+client = OpenAI(api_key="sk-...")
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "What is 2+2?"}]
+)
+
+# Automatically logged with:
+# - action_name: "openai_chat_completion"
+# - cost: $0.015 (calculated from token usage)
+# - input_tokens: 10
+# - output_tokens: 5
+# - model: "gpt-4o"
+# - duration: ~500ms
+```
+
+### Async OpenAI
+
+```python
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI(api_key="sk-...")
+
+# Automatically tracked
+response = await client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+## Anthropic instrumentation
+
+```python
+from agent_sentinel.integrations import instrument_anthropic
+from anthropic import Anthropic
+
+# Instrument Anthropic (one-time setup)
+instrument_anthropic()
+
+# Use Anthropic normally - automatically tracked
+client = Anthropic(api_key="sk-ant-...")
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "What is 2+2?"}]
+)
+
+# Automatically logged with:
+# - action_name: "anthropic_messages_create"
+# - cost: $0.008 (calculated from token usage)
+# - input_tokens: 10
+# - output_tokens: 5
+# - model: "claude-3-5-sonnet-20241022"
+```
+
+### Async Anthropic
+
+```python
+from anthropic import AsyncAnthropic
+
+client = AsyncAnthropic(api_key="sk-ant-...")
+
+response = await client.messages.create(
+    model="claude-3-5-haiku-20241022",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+## Grok instrumentation
+
+```python
+from agent_sentinel.integrations import instrument_grok
+from openai import OpenAI  # Grok uses OpenAI SDK
+
+# Instrument Grok (one-time setup)
+instrument_grok()
+
+# Use Grok via OpenAI SDK
+client = OpenAI(
+    api_key="xai-...",
+    base_url="https://api.x.ai/v1"
+)
+
+response = client.chat.completions.create(
+    model="grok-beta",
+    messages=[{"role": "user", "content": "What is 2+2?"}]
+)
+```
+
+## Gemini instrumentation
+
+```python
+from agent_sentinel.integrations import instrument_gemini
+import google.generativeai as genai
+
+# Instrument Gemini (one-time setup)
+instrument_gemini()
+
+# Use Gemini normally
+genai.configure(api_key="AIza...")
+model = genai.GenerativeModel('gemini-pro')
+
+response = model.generate_content("What is 2+2?")
+```
+
+## Getting token costs
+
+Retrieve cumulative costs across all instrumented LLM calls:
+
+```python
+from agent_sentinel.integrations import get_token_costs
+
+# Get total costs by provider
+costs = get_token_costs()
+
+print(f"OpenAI: ${costs['openai']:.4f}")
+print(f"Anthropic: ${costs['anthropic']:.4f}")
+print(f"Grok: ${costs['grok']:.4f}")
+print(f"Gemini: ${costs['gemini']:.4f}")
+print(f"Total: ${costs['total']:.4f}")
+```
+
+## Pricing data
+
+Agent Sentinel includes up-to-date pricing (as of December 2024):
+
+### OpenAI pricing
+
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| gpt-4o | $2.50 | $10.00 |
+| gpt-4o-mini | $0.15 | $0.60 |
+| gpt-4-turbo | $10.00 | $30.00 |
+| gpt-3.5-turbo | $0.50 | $1.50 |
+| o1 | $15.00 | $60.00 |
+| o1-mini | $3.00 | $12.00 |
+
+### Anthropic pricing
+
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| claude-3-5-sonnet | $3.00 | $15.00 |
+| claude-3-5-haiku | $0.80 | $4.00 |
+| claude-3-opus | $15.00 | $75.00 |
+| claude-3-sonnet | $3.00 | $15.00 |
+| claude-3-haiku | $0.25 | $1.25 |
+
+### Grok pricing
+
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| grok-beta | $5.00 | $15.00 |
+
+### Gemini pricing
+
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| gemini-pro | $0.50 | $1.50 |
+| gemini-pro-vision | $0.50 | $1.50 |
+
+## Advanced: Custom pricing
+
+Override default pricing for custom models:
+
+```python
+from agent_sentinel.integrations.pricing import ModelPricing, PRICING_DATA
+
+# Add custom model pricing
+PRICING_DATA["openai"]["my-custom-model"] = ModelPricing(
+    input_price_per_1m=5.0,
+    output_price_per_1m=20.0
+)
+```
+
+## Combining with @guarded_action
+
+LLM instrumentation works alongside manual instrumentation:
+
+```python
+from agent_sentinel import guarded_action
+from agent_sentinel.integrations import instrument_openai
+from openai import OpenAI
+
+instrument_openai()
+client = OpenAI()
+
+@guarded_action(name="agent_reasoning", cost_usd=0.0)
+def run_agent(task):
+    # Manual action wrapping
+    result = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": task}]
+    )
+    # LLM call automatically tracked WITHIN this action
+    return result.choices[0].message.content
+
+# Ledger will show:
+# 1. "agent_reasoning" action (manual)
+# 2. "openai_chat_completion" action (automatic, nested)
+```
+
+## Policy enforcement on LLM calls
+
+LLM calls respect policy budgets:
+
+```python
+from agent_sentinel import PolicyEngine
+from agent_sentinel.integrations import instrument_openai
+from openai import OpenAI
+
+# Set budget
+PolicyEngine.configure(session_budget=1.0)
+
+instrument_openai()
+client = OpenAI()
+
+# First few calls succeed
+for i in range(10):
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": f"Task {i}"}]
+    )
+    # Each call costs ~$0.10
+    # After 10 calls, BudgetExceededError is raised
+```
+
+## Ledger output example
+
+With LLM instrumentation enabled, your ledger includes detailed LLM call records:
+
+```jsonl
+{
+  "uuid": "a1b2c3d4...",
+  "timestamp": "2024-12-28T10:30:00.123456Z",
+  "action": "openai_chat_completion",
+  "cost_usd": 0.0155,
+  "duration_ns": 523000000,
+  "outcome": "success",
+  "tags": ["llm", "openai"],
+  "inputs": {
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "What is 2+2?"}],
+    "max_tokens": 1024
+  },
+  "outputs": {
+    "content": "2 + 2 equals 4.",
+    "input_tokens": 10,
+    "output_tokens": 5,
+    "total_tokens": 15,
+    "finish_reason": "stop"
+  }
+}
+```
+
+## Best practices
+
+<Tip>
+**Instrument at startup**: Call `instrument_<provider>()` once at application startup, before creating any LLM clients.
+</Tip>
+
+<Tip>
+**Use with budgets**: Combine LLM instrumentation with session/run budgets to prevent runaway costs.
+</Tip>
+
+<Warning>
+**Pricing data may lag**: Pricing is updated regularly but may not reflect same-day price changes. Override with custom pricing if needed.
+</Warning>
+
+<Tip>
+**Track costs by provider**: Use `get_token_costs()` to see which providers are driving your costs.
+</Tip>
+
+## Troubleshooting
+
+### "LLM calls not tracked"
+
+Make sure to call `instrument_<provider>()` **before** creating the client:
+
+```python
+# ✅ Correct order
+instrument_openai()
+client = OpenAI()
+
+# ❌ Wrong order
+client = OpenAI()
+instrument_openai()  # Too late!
+```
+
+### "Incorrect costs"
+
+Verify the model name matches our pricing data. Use `normalize_model_name()` to check:
+
+```python
+from agent_sentinel.integrations.pricing import normalize_model_name
+
+print(normalize_model_name("gpt-4o-2024-05-13"))  # "gpt-4o"
+```
+
+## See also
+
+- [Framework Integrations](/sdk/python/framework-integrations) - LangChain and CrewAI integrations
+- [Policies](/sdk/python/policies) - Enforce budgets on LLM calls
+- [Instrumentation](/sdk/python/instrumentation) - Manual action wrapping

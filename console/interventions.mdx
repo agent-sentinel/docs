@@ -1,0 +1,243 @@
+---
+title: "Interventions Page"
+description: "Monitor policy enforcement and track what Agent Sentinel blocks in real-time."
+---
+
+## Overview
+
+The **Interventions Page** provides real-time visibility into Agent Sentinel's policy enforcement. See exactly what actions were blocked, modified, or escalated - demonstrating the platform's core value.
+
+## Dashboard stats
+
+At the top of the page, 6 key metrics show intervention impact:
+
+| Stat | Description |
+|------|-------------|
+| **Total Interventions** | Count of all interventions |
+| **Blocked Actions** | Actions prevented from executing |
+| **Cost Saved** | USD prevented (estimated costs of blocked actions) |
+| **Escalations** | Actions sent for human approval |
+| **High Risk** | Count of critical/high-risk blocks |
+| **Modified** | Actions with parameters changed |
+
+**Example:**
+```
+Total Interventions: 1,456
+Blocked Actions: 1,012
+Cost Saved: $12,456.78
+Escalations: 234
+High Risk: 123
+Modified: 45
+```
+
+<Tip>
+**Click stats to filter**: Click any stat card to filter the intervention list below.
+</Tip>
+
+## Filtering interventions
+
+Use the filter bar to find specific interventions:
+
+### Filter by type
+- **Hard Block** - Action completely denied
+- **Approval Required** - Escalated for human review
+- **Rate Limited** - Blocked due to rate limits
+- **Budget Exceeded** - Blocked due to budget constraints
+- **Downgrade** - Parameters modified
+- **Warning** - Flagged but allowed
+
+### Filter by outcome
+- **Blocked** - Not executed
+- **Escalated** - Sent for review
+- **Approved After Review** - Human approved
+- **Rejected After Review** - Human rejected
+- **Modified** - Parameters changed
+- **Warned** - Logged with warning
+
+### Filter by risk level
+- **Critical** - Catastrophic impact
+- **High** - Severe impact
+- **Medium** - Moderate impact
+- **Low** - Minor impact
+- **Minimal** - Negligible impact
+
+### Search
+Use the search bar to find by:
+- Action name
+- Agent ID
+- Policy name
+- Description text
+
+### Quick filters
+
+Pre-configured filter chips:
+- **Critical Risk** - Show only critical-risk interventions
+- **High Cost Prevented** - Interventions that saved $100+
+- **Last 24 Hours** - Recent interventions
+- **Blocked by Policy X** - Filter by specific policy
+
+## Intervention table
+
+The main table shows all interventions with columns:
+
+| Column | Description |
+|--------|-------------|
+| **Timestamp** | When intervention occurred |
+| **Type** | Intervention type badge |
+| **Action** | Action name that was blocked/modified |
+| **Agent** | Agent ID that attempted the action |
+| **Risk** | Risk level badge |
+| **Cost** | Estimated cost (or cost prevented) |
+| **Policy** | Policy that triggered intervention |
+| **Outcome** | Final outcome badge |
+
+**Badges color coding:**
+- 🔴 **Critical/Hard Block** - Red
+- 🟠 **High/Approval Required** - Orange
+- 🟡 **Medium/Rate Limited** - Yellow
+- 🟢 **Low/Warning** - Green
+
+## Intervention detail modal
+
+Click any intervention to open the detail modal with 4 tabs:
+
+### Overview tab
+
+- **Intervention ID**
+- **Timestamp**
+- **Type & Outcome**
+- **Risk Level**
+- **Action Name**
+- **Description**
+- **Agent ID** (link to agent page)
+- **Run ID** (link to run details)
+- **Policy** (link to policy settings)
+
+### Sentinel Reasoning tab
+
+Shows why Sentinel intervened:
+
+```
+Reason: Action 'delete_production_database' is on the denied list
+
+Agent Intent: Cleanup old test data
+
+Blast Radius: Prevented deletion of 1M+ customer records
+  - Database: production
+  - Table: customers
+  - Estimated impact: Data loss, service outage
+  - Recovery cost: $50,000+
+```
+
+### Action Details tab
+
+- **Original Inputs**: Parameters agent provided
+- **Modified Inputs**: Changed parameters (if downgraded)
+- **Estimated Cost**: What action would have cost
+- **Actual Cost**: What was charged (0 if blocked)
+- **Cost Prevented**: USD saved by blocking
+
+### Context tab
+
+- **Policy Details**: Full policy configuration
+- **Related Runs**: Other runs by this agent
+- **Similar Interventions**: Other blocks of same action
+- **Adjust Policy**: Link to edit triggering policy
+
+## Real-time updates
+
+The page updates in real-time via WebSocket:
+
+- **New interventions** - Appear at top of list with pulse animation
+- **Stats refresh** - Counters update live
+- **Notifications** - Browser notification for critical-risk blocks (if enabled)
+
+**Connection indicator** (top right):
+- 🟢 **REALTIME** - WebSocket connected
+- 🟡 **POLLING** - Fallback polling mode
+
+## Common workflows
+
+### Review high-risk blocks
+
+1. Click "Critical Risk" quick filter
+2. Review each intervention
+3. Determine if policy needs adjustment or agent logic needs fixing
+4. Click "Adjust Policy" to modify rules
+
+### Demonstrate ROI
+
+1. Sort by "Cost Saved" (descending)
+2. Export filtered results (CSV)
+3. Sum cost_prevented_usd column
+4. Present to stakeholders showing dollars saved
+
+### Investigate agent misbehavior
+
+1. Filter by agent_id
+2. Review intervention types and frequencies
+3. If many hard blocks: Agent attempting forbidden actions
+4. If many budget exceeded: Agent needs cost optimization
+5. Link to agent page for full statistics
+
+### Tune policies
+
+1. Group by policy (click policy name)
+2. Review all interventions triggered by that policy
+3. Identify false positives (legitimate actions blocked)
+4. Adjust policy rules to reduce false positives
+5. Monitor intervention rate decrease
+
+## Exporting data
+
+Click **Export** to download interventions:
+
+1. Respects current filters
+2. Choose format: CSV, JSON, JSONL
+3. Includes all fields (type, outcome, risk, cost prevented, blast radius)
+4. Use for reporting, compliance, analysis
+
+## Best practices
+
+<Tip>
+**Review daily**: Check interventions every day to catch patterns early. High intervention rates may indicate policy misconfigurations.
+</Tip>
+
+<Tip>
+**Focus on critical/high risk**: Prioritize reviewing critical and high-risk blocks - these prevent the most damage.
+</Tip>
+
+<Warning>
+**Don't ignore warnings**: Even "warning" type interventions indicate risky behavior - review agent logic to eliminate warnings.
+</Warning>
+
+<Tip>
+**Document blast radius**: Use the blast radius field to quantify impact for stakeholder reports.
+</Tip>
+
+## Troubleshooting
+
+### "No interventions showing"
+
+- Check if any policies are enabled (Settings → Policies)
+- Verify agents are using `PolicyEngine.configure()`
+- Confirm SDK version includes intervention tracking
+- Try removing all filters
+
+### "Stats not updating"
+
+- Check WebSocket connection (should show "REALTIME")
+- Refresh page to reset connection
+- Verify network allows WebSocket connections
+
+### "Can't filter by agent"
+
+- Type exact agent_id (case-sensitive)
+- Use agent search (not action search)
+- Check agent exists in Agents page
+
+## See also
+
+- [Platform Interventions API](/platform/interventions) - API documentation
+- [SDK Interventions](/sdk/python/interventions) - SDK-side tracking
+- [Policies](/console/settings#policies) - Configure intervention rules

@@ -1,0 +1,456 @@
+---
+title: "Approvals API"
+description: "Human-in-the-loop approval workflows for sensitive agent actions."
+---
+
+## Overview
+
+The Approvals API enables human oversight of AI agent actions. When an agent attempts a sensitive operation, it creates an approval request that humans review via the web console or API before the action executes.
+
+## Core workflow
+
+1. **SDK creates request**: Agent calls `@guarded_action` with `requires_human_approval=True`
+2. **Request submitted**: SDK posts to `/api/v1/approvals`
+3. **Human reviews**: Approver sees request in web console or via API
+4. **Decision made**: Approve, reject, or request more info
+5. **SDK polls**: Agent receives decision via polling endpoint
+6. **Action executes**: If approved, action proceeds; if rejected, raises error
+
+## Endpoints
+
+### Create approval request (SDK)
+
+```bash
+POST /api/v1/approvals
+```
+
+**Request body:**
+```json
+{
+  "action_name": "transfer_funds",
+  "description": "Transfer $10,000 from account A to account B",
+  "agent_id": "payment-agent",
+  "run_id": "run_123",
+  "estimated_cost_usd": 0.10,
+  "priority": "high",
+  "risk_level": "high",
+  "timeout_seconds": 600,
+  "action_inputs": {
+    "from_account": "acct_123",
+    "to_account": "acct_456",
+    "amount_usd": 10000.0
+  },
+  "context": {
+    "user_id": "user_789",
+    "requested_at": "2024-12-28T14:30:00Z"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "approval_id": "approval_abc123",
+  "status": "pending",
+  "created_at": "2024-12-28T14:30:00Z",
+  "expires_at": "2024-12-28T14:40:00Z"
+}
+```
+
+### List approval requests
+
+```bash
+GET /api/v1/approvals
+```
+
+**Query parameters:**
+- `status` (optional): Filter by status
+  - `pending`, `approved`, `rejected`, `expired`, `cancelled`, `info_requested`
+- `priority` (optional): Filter by priority
+  - `critical`, `high`, `medium`, `low`
+- `risk_level` (optional): Filter by risk level
+  - `critical`, `high`, `medium`, `low`, `minimal`
+- `agent_id` (optional): Filter by agent
+- `include_expired` (optional): Include expired approvals (default: false)
+- `skip` (optional): Pagination offset
+- `limit` (optional): Page size (max: 1000)
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/approvals?status=pending&priority=critical"
+```
+
+### Get pending approvals
+
+Convenience endpoint for pending approvals only:
+
+```bash
+GET /api/v1/approvals/pending
+```
+
+**Response:**
+```json
+{
+  "approvals": [
+    {
+      "id": "approval_abc123",
+      "action_name": "transfer_funds",
+      "description": "Transfer $10,000 from account A to account B",
+      "agent_id": "payment-agent",
+      "run_id": "run_123",
+      "status": "pending",
+      "priority": "high",
+      "risk_level": "high",
+      "estimated_cost_usd": 0.10,
+      "action_inputs": {
+        "from_account": "acct_123",
+        "to_account": "acct_456",
+        "amount_usd": 10000.0
+      },
+      "context": {},
+      "timeout_seconds": 600,
+      "created_at": "2024-12-28T14:30:00Z",
+      "expires_at": "2024-12-28T14:40:00Z",
+      "time_remaining_seconds": 480
+    }
+  ],
+  "total": 3
+}
+```
+
+### Get approval details
+
+```bash
+GET /api/v1/approvals/{id}
+```
+
+Returns full approval details including decision history.
+
+### Approve action
+
+```bash
+POST /api/v1/approvals/{id}/approve
+```
+
+**Request body:**
+```json
+{
+  "approver_email": "manager@company.com",
+  "approver_name": "Jane Manager",
+  "notes": "Verified with customer - approved"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "approval_abc123",
+  "status": "approved",
+  "decision": {
+    "status": "approved",
+    "approver_email": "manager@company.com",
+    "approver_name": "Jane Manager",
+    "notes": "Verified with customer - approved",
+    "decided_at": "2024-12-28T14:35:00Z",
+    "decision_time_seconds": 300
+  },
+  "updated_at": "2024-12-28T14:35:00Z"
+}
+```
+
+### Reject action
+
+```bash
+POST /api/v1/approvals/{id}/reject
+```
+
+**Request body:**
+```json
+{
+  "approver_email": "security@company.com",
+  "approver_name": "John Security",
+  "notes": "Transfer amount exceeds daily limit - rejected"
+}
+```
+
+### Request more information
+
+```bash
+POST /api/v1/approvals/{id}/request-info
+```
+
+**Request body:**
+```json
+{
+  "approver_email": "compliance@company.com",
+  "message": "Please provide customer authorization document"
+}
+```
+
+Status changes to `info_requested`. SDK must respond with additional context.
+
+### Respond to info request (SDK)
+
+```bash
+POST /api/v1/approvals/{id}/respond
+```
+
+**Request body:**
+```json
+{
+  "response_text": "Customer authorization document uploaded to case #12345"
+}
+```
+
+Status returns to `pending` for approver to review again.
+
+### Poll approval status (SDK)
+
+```bash
+GET /api/v1/approvals/{id}/poll
+```
+
+SDK polls this endpoint to check if decision has been made:
+
+**Response:**
+```json
+{
+  "id": "approval_abc123",
+  "status": "approved",
+  "decision": {
+    "status": "approved",
+    "approver_email": "manager@company.com",
+    "notes": "Approved",
+    "decided_at": "2024-12-28T14:35:00Z"
+  }
+}
+```
+
+### Cancel approval (SDK)
+
+```bash
+POST /api/v1/approvals/{id}/cancel
+```
+
+SDK can cancel pending approvals if circumstances change:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://platform.agentsentinel.dev/api/v1/approvals/approval_abc123/cancel"
+```
+
+### Check if action requires approval
+
+```bash
+POST /api/v1/approvals/check
+```
+
+Pre-flight check to determine if an action would require approval:
+
+**Request body:**
+```json
+{
+  "action_name": "delete_user_data",
+  "agent_id": "cleanup-agent",
+  "estimated_cost_usd": 0.0
+}
+```
+
+**Response:**
+```json
+{
+  "requires_approval": true,
+  "reason": "Action 'delete_user_data' is in the approval_required_actions list",
+  "policy_id": "policy_123",
+  "policy_name": "Data Safety"
+}
+```
+
+### Approval statistics
+
+```bash
+GET /api/v1/approvals/stats
+```
+
+Returns aggregate approval metrics:
+
+```json
+{
+  "total_approvals": 456,
+  "by_status": {
+    "pending": 12,
+    "approved": 234,
+    "rejected": 45,
+    "expired": 23,
+    "cancelled": 5,
+    "info_requested": 3
+  },
+  "by_priority": {
+    "critical": 34,
+    "high": 123,
+    "medium": 234,
+    "low": 65
+  },
+  "by_risk_level": {
+    "critical": 23,
+    "high": 145,
+    "medium": 234,
+    "low": 54,
+    "minimal": 0
+  },
+  "avg_decision_time_seconds": 287.5,
+  "approval_rate": 0.84,
+  "rejection_rate": 0.16
+}
+```
+
+## Priority levels
+
+| Priority | Description | Use case |
+|----------|-------------|----------|
+| `critical` | Requires immediate attention | Production incidents, high-value transactions |
+| `high` | Should be reviewed within hours | Important operations, customer requests |
+| `medium` | Normal priority | Routine operations |
+| `low` | Can wait | Non-urgent actions, batch operations |
+
+## Risk levels
+
+| Risk | Description |
+|------|-------------|
+| `critical` | Catastrophic impact if approved incorrectly |
+| `high` | Severe impact (financial, security, compliance) |
+| `medium` | Moderate impact |
+| `low` | Minor impact |
+| `minimal` | Negligible impact |
+
+## Approval statuses
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Awaiting human decision |
+| `approved` | Human approved - action can proceed |
+| `rejected` | Human rejected - action blocked |
+| `expired` | Timeout exceeded with no decision |
+| `cancelled` | SDK cancelled the request |
+| `info_requested` | Approver needs more context |
+
+## Timeout behavior
+
+When an approval expires:
+- Status changes to `expired`
+- SDK receives `TimeoutError`
+- Action is not executed
+- Intervention is created with type `APPROVAL_REQUIRED`, outcome `BLOCKED`
+
+## Real-time updates
+
+Approvals support WebSocket real-time updates:
+
+```javascript
+// Web console subscribes to approval events
+ws.send(JSON.stringify({
+  type: 'subscribe',
+  channel: 'approvals'
+}));
+
+// Receive updates
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.event_type === 'approval_created') {
+    // Show new approval notification
+  }
+  if (data.event_type === 'approval_expired') {
+    // Mark approval as expired
+  }
+};
+```
+
+## Web console workflow
+
+Approvers use the web console to:
+
+1. Navigate to **Approvals** page
+2. See pending approvals with expiration countdown
+3. Click "Review" to see full details:
+   - Action description and context
+   - Risk and priority levels
+   - Estimated cost
+   - Input parameters
+   - Agent information
+4. Take action:
+   - **Approve** with optional notes
+   - **Reject** with reason
+   - **Request Info** to ask agent for more context
+5. View decision history in "Decision History" tab
+
+## Best practices
+
+<Tip>
+**Set appropriate timeouts**: Critical actions should have short timeouts (5-10 min), routine actions can have longer timeouts (1-24 hours).
+</Tip>
+
+<Tip>
+**Use priority and risk levels**: Help approvers triage - critical/high priority items should notify immediately (email, Slack, etc.).
+</Tip>
+
+<Tip>
+**Provide detailed descriptions**: Include enough context so approvers can make informed decisions without requesting more info.
+</Tip>
+
+<Warning>
+**Handle expired approvals**: SDKs must handle `TimeoutError` gracefully - don't assume approvals will be granted within timeout.
+</Warning>
+
+<Tip>
+**Monitor approval rates**: Low approval rates (< 70%) may indicate agents attempting inappropriate actions - review agent logic.
+</Tip>
+
+## Example: Full workflow
+
+```python
+# SDK side
+from agent_sentinel import guarded_action, ApprovalClient, ApprovalStatus, TimeoutError
+
+client = ApprovalClient(
+    platform_url="https://platform.agentsentinel.dev",
+    api_token="as_your_api_key"
+)
+
+@guarded_action(
+    name="transfer_funds",
+    cost_usd=0.10,
+    requires_human_approval=True
+)
+def transfer_funds(from_acct, to_acct, amount):
+    # This triggers approval workflow automatically
+    response = client.request_approval_sync(
+        action_name="transfer_funds",
+        description=f"Transfer ${amount} from {from_acct} to {to_acct}",
+        priority="high",
+        risk_level="high",
+        timeout_seconds=600,
+        action_inputs={"from_acct": from_acct, "to_acct": to_acct, "amount": amount}
+    )
+
+    if response.status == ApprovalStatus.APPROVED:
+        # Execute transfer
+        return execute_transfer(from_acct, to_acct, amount)
+    elif response.status == ApprovalStatus.REJECTED:
+        raise Exception(f"Transfer rejected: {response.notes}")
+    elif response.status == ApprovalStatus.EXPIRED:
+        raise TimeoutError("Approval timed out")
+
+# Human side (web console or API)
+# GET /api/v1/approvals/pending → see request
+# POST /api/v1/approvals/approval_abc123/approve → approve it
+# SDK polls and receives approval → transfer executes
+```
+
+## See also
+
+- [SDK Approvals](/sdk/python/approvals) - SDK-side approval client
+- [Compliance](/platform/compliance) - EU AI Act Article 14 compliance
+- [Interventions](/platform/interventions) - Track approval escalations
+- [WebSockets](/platform/websockets) - Real-time approval updates

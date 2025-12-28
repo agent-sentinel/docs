@@ -1,0 +1,401 @@
+---
+title: "Activity Ledger"
+description: "Complete audit trail of all agent actions with advanced filtering and export."
+---
+
+## Overview
+
+The **Activity Ledger** provides a unified, chronological view of **all actions across all runs**. It's your complete audit trail with powerful filtering, search, and export capabilities.
+
+## Dashboard stats
+
+At the top, 6 metrics summarize ledger data:
+
+| Stat | Description |
+|------|-------------|
+| **Total Actions** | Count of all actions logged |
+| **Total Cost** | Sum of all costs (USD) |
+| **Success Count** | Actions with outcome="success" |
+| **Error Count** | Actions with outcome="error" |
+| **Blocked Count** | Actions blocked by policies |
+| **Avg Duration** | Mean execution time |
+
+Additional stats:
+- **Unique Agents** - Count of distinct agent_ids
+- **Unique Action Types** - Count of distinct action names
+
+## Advanced filtering
+
+The ledger's power is in its **comprehensive filtering system**:
+
+### Filter by outcome
+
+- **Success** - Completed successfully
+- **Error** - Failed with exception
+- **Blocked** - Prevented by policy
+- **Replayed** - Executed via replay mode
+
+Combine multiple outcomes (e.g., show errors + blocked).
+
+### Filter by action name
+
+- **Exact match** - Type action name
+- **Auto-complete** - Suggests from existing actions
+- **Case-sensitive**
+
+Examples:
+- `call_llm` - All LLM calls
+- `search_web` - All web searches
+- `transfer_funds` - All fund transfers
+
+### Filter by agent
+
+- Select from dropdown of known agents
+- Type to search by agent_id
+- Shows display name if set
+
+### Filter by run
+
+- Enter run_id
+- Shows only actions from that specific run
+- Useful for drilling down from Runs page
+
+### Filter by cost range
+
+Set min and max cost:
+- **Min cost** - Show actions >= this cost
+- **Max cost** - Show actions <= this cost
+
+Examples:
+- Min: $0.10 - Expensive actions only
+- Max: $0.01 - Cheap actions only
+- Min: $1.00, Max: $5.00 - Mid-range actions
+
+### Filter by date range
+
+Set start and end dates:
+- **Start date** - Show actions after this date/time
+- **End date** - Show actions before this date/time
+- Date picker with time selection
+- Timezone-aware
+
+Common presets:
+- **Last 24 hours**
+- **Last 7 days**
+- **Last 30 days**
+- **Custom range**
+
+### Full-text search
+
+Search across multiple fields:
+- Action name
+- Input parameters (JSON content)
+- Output results (JSON content)
+- Tags
+- Agent ID
+
+**Search tips:**
+- Use quotes for exact phrases: `"customer email"`
+- Searches are case-insensitive
+- Matches partial strings
+
+**Examples:**
+- Search `error` - Finds actions with "error" in outputs
+- Search `user@example.com` - Finds actions with that email
+- Search `"payment processed"` - Exact phrase match
+
+### Sort options
+
+Sort by multiple fields:
+- **Timestamp** (asc/desc) - Chronological order
+- **Cost** (asc/desc) - By expense
+- **Duration** (asc/desc) - By execution time
+- **Action name** (asc/desc) - Alphabetical
+
+Default: Timestamp descending (newest first).
+
+## Action table
+
+Main table shows all matching actions:
+
+| Column | Description |
+|--------|-------------|
+| **Timestamp** | When action executed (with timezone) |
+| **Action** | Action name |
+| **Agent** | Agent ID (link to agent page) |
+| **Run** | Run ID (link to run details) |
+| **Outcome** | Badge (success/error/blocked/replayed) |
+| **Cost** | USD with 4 decimal precision |
+| **Duration** | Execution time (ms) |
+| **Tags** | Action tags (if any) |
+
+**Badge colors:**
+- 🟢 **Success** - Green
+- 🔴 **Error** - Red
+- 🟠 **Blocked** - Orange
+- 🔵 **Replayed** - Blue
+
+**Row actions:**
+- Click row to open **Action Inspector**
+- Hover for quick preview
+
+## Action inspector modal
+
+Click any action to open detailed view:
+
+### Overview section
+
+- **Action ID** (UUID)
+- **Action name**
+- **Timestamp** (full precision)
+- **Outcome** with description
+- **Cost** (USD)
+- **Duration** (nanosecond precision, displayed in ms)
+- **Agent ID** (link)
+- **Run ID** (link)
+- **Tags** (if any)
+
+### Inputs section
+
+Full input parameters with:
+- **Syntax-highlighted JSON**
+- **Expandable/collapsible** nested objects
+- **Copy to clipboard** button
+- **Type information** (string, number, object, array, etc.)
+
+Example:
+```json
+{
+  "prompt": "What is the capital of France?",
+  "model": "gpt-4o",
+  "max_tokens": 100,
+  "temperature": 0.7
+}
+```
+
+### Outputs section
+
+Full output results with:
+- **Syntax-highlighted JSON**
+- **Expandable/collapsible** nested objects
+- **Copy to clipboard** button
+- **Size indicator** (bytes)
+
+Example:
+```json
+{
+  "response": "The capital of France is Paris.",
+  "tokens_used": 15,
+  "finish_reason": "stop"
+}
+```
+
+### Metadata section
+
+Additional information:
+- **Error details** (if outcome=error)
+  - Exception type
+  - Error message
+  - Stack trace (if available)
+- **Compliance data** (if applicable)
+  - Approval status
+  - Approver information
+  - Decision rationale
+  - Data lineage
+  - Model card
+- **Original vs Modified** (if downgraded by policy)
+
+### Related actions
+
+Links to related items:
+- **Other actions in this run** - View siblings
+- **Similar actions** - Same action name, different runs
+- **Agent's recent actions** - Last 10 from this agent
+
+## Pagination
+
+Navigate large result sets:
+- **Page size**: 50, 100, 500, 1000 per page
+- **Page controls**: First, Previous, Next, Last
+- **Jump to page**: Enter page number
+- **Total count**: Shows total matching actions
+
+<Note>
+Large page sizes (500-1000) may be slower to load. Use filters to reduce result set.
+</Note>
+
+## Export functionality
+
+Click **Export** to download ledger data:
+
+### Export formats
+
+1. **JSONL** (JSON Lines) - One JSON object per line
+   - Best for programmatic processing
+   - Stream-friendly
+   - Newline-delimited
+
+2. **JSON** - Standard JSON array
+   - Best for data analysis tools
+   - Human-readable
+   - Single file
+
+3. **CSV** - Comma-separated values
+   - Best for Excel/spreadsheets
+   - Flat structure (nested objects flattened)
+   - Universal compatibility
+
+### Export options
+
+- **Respects current filters** - Only exports what's visible
+- **Includes all fields** - Inputs, outputs, metadata, compliance data
+- **Limit**: 100,000 records per export
+- **Streaming**: Large exports stream to prevent timeouts
+
+### Export use cases
+
+- **Compliance reporting** - Generate audit reports
+- **Cost analysis** - Import into BI tools
+- **Data science** - Train models on action patterns
+- **Debugging** - Analyze errors in detail
+- **Backup** - Archive historical data
+
+## Real-time updates
+
+Ledger updates live via WebSocket:
+
+**When new action is logged:**
+1. Appears at top of table (if matches filters)
+2. Row highlights briefly (fade-in animation)
+3. Stats refresh
+4. Notification (optional)
+
+**Connection indicator:**
+- 🟢 **REALTIME** - Live updates
+- 🟡 **POLLING** - Fallback mode (30s refresh)
+
+## Common workflows
+
+### Audit trail for compliance
+
+1. Filter by date range (e.g., last quarter)
+2. Export as JSONL
+3. Store in compliance archive
+4. Generate report showing:
+   - All actions logged
+   - Human oversight events (approvals)
+   - Policy violations (blocked actions)
+   - Data lineage
+
+### Find expensive LLM calls
+
+1. Filter by action name: `call_llm`
+2. Sort by cost (descending)
+3. Review top 10 most expensive
+4. Check inputs for optimization opportunities:
+   - Reduce max_tokens?
+   - Use cheaper model?
+   - Add caching?
+
+### Debug errors for specific agent
+
+1. Filter by agent_id: `my-agent`
+2. Filter by outcome: Error
+3. Sort by timestamp (newest first)
+4. Open first error in inspector
+5. Review error message and stack trace
+6. Check inputs that caused error
+7. Reproduce and fix
+
+### Track approval decisions
+
+1. Full-text search: `approved` or `rejected`
+2. Filter to actions with compliance metadata
+3. Review approver decisions
+4. Analyze patterns:
+   - Who approves most?
+   - What actions get rejected?
+   - How long do decisions take?
+
+### Monitor policy enforcement
+
+1. Filter by outcome: Blocked
+2. Review what's being blocked
+3. If many legitimate actions blocked:
+   - Policies may be too strict
+   - Adjust in Settings → Policies
+4. If many violations:
+   - Agent may be misbehaving
+   - Review agent logic
+
+## Saved filters (future)
+
+**Coming soon**: Save commonly-used filter combinations:
+- "Expensive LLM calls" (action=call_llm, cost>$1)
+- "Recent errors" (outcome=error, last 24h)
+- "High-risk blocks" (outcome=blocked, risk=critical)
+
+Click to apply saved filter instantly.
+
+## Best practices
+
+<Tip>
+**Use filters liberally**: The ledger can contain millions of actions - always filter to find what you need.
+</Tip>
+
+<Tip>
+**Export regularly for compliance**: Set up monthly exports of all actions for audit trail archival.
+</Tip>
+
+<Warning>
+**Search is resource-intensive**: Full-text search across millions of records can be slow - combine with date filters for better performance.
+</Warning>
+
+<Tip>
+**Bookmark common searches**: Save frequently-used filter URLs as bookmarks for quick access.
+</Tip>
+
+## Keyboard shortcuts
+
+- `/` - Focus search bar
+- `f` - Open filter panel
+- `e` - Export
+- `Esc` - Close inspector modal
+- Arrow keys - Navigate table rows
+
+## Troubleshooting
+
+### "No actions showing"
+
+- Check if filters are too restrictive
+- Try "Clear all filters" button
+- Verify date range includes recent data
+- Check if any runs have been created
+
+### "Search not finding results"
+
+- Ensure spelling is correct (case-insensitive but must match)
+- Try partial search without quotes
+- Check if searching in right field (inputs vs outputs)
+- Clear other filters that may exclude results
+
+### "Export timing out"
+
+- Reduce result set with filters
+- Try JSONL instead of JSON (streams better)
+- Break into multiple exports by date range
+- Contact support if exporting > 100k records needed
+
+### "Real-time updates not working"
+
+- Check connection indicator (should be green "REALTIME")
+- Refresh page to reconnect WebSocket
+- Verify no network/firewall issues
+- Fallback polling should activate automatically
+
+## See also
+
+- [Platform Ledger API](/platform/ledger) - API documentation
+- [Runs](/console/runs) - View actions within specific runs
+- [Agents](/console/agents) - View actions by agent
+- [Compliance](/platform/compliance) - Export compliance reports
