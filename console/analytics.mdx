@@ -216,14 +216,115 @@ Change aggregation:
 - **By week** - Weekly breakdown (for 30d+ window)
 - **By month** - Monthly breakdown (for all time)
 
-## Cost alerts (future)
+## Budget Forecasting & Alerts
 
-**Coming soon**: Automated cost alerts:
+Agent Sentinel provides **GCP-style predictive analytics** to help you stay within budget and optimize spending.
 
-- **Budget thresholds** - Alert when approaching budget
-- **Anomalies** - Detect unusual cost spikes
-- **Projections** - Warn if projected monthly cost exceeds budget
-- **Delivery** - Email, Slack, webhooks
+### Budget forecast widget
+
+Set a budget amount to see real-time forecasting:
+
+**Metrics displayed:**
+- **Current Spend** - What you've spent so far this period
+- **Burn Rate** - Spending velocity relative to time elapsed
+  - 1.0 = on track
+  - \> 1.0 = overspending
+  - < 1.0 = underspending
+- **Projected Total** - Estimated end-of-period spend
+- **Days Remaining** - Time left in budget period
+
+**Alert severity levels:**
+- 🟢 **Info** - On track (< 80% projected)
+- 🟡 **Warning** - Approaching limit (80-100% projected)
+- 🟠 **Critical** - Will exceed budget (100%+ projected)
+- 🔴 **Exceeded** - Already over budget
+
+**Example:**
+
+```
+Current Spend: $234.56 (46.9% of budget)
+Burn Rate: 1.15x (overspending)
+Projected Total: $575.23 of $500.00 budget
+Days Remaining: 18 days
+```
+
+### Smart recommendations
+
+The forecast widget provides actionable recommendations:
+
+- "⚠️ Budget will be exceeded by $75.23 (15.0%)"
+- "🔥 High burn rate (1.15x) - reduce agent frequency or switch to cheaper models"
+- "💡 18 days remaining - time to optimize or increase budget"
+- "💰 Switch expensive actions to cheaper models (GPT-4 → GPT-3.5 saves 90%)"
+- "⚙️ Implement rate limiting or approval gates for high-cost actions"
+
+### Budget exhaustion warning
+
+When projected to exceed budget, see:
+- **Projected date exceeded** - When budget will run out
+- **Days until exceeded** - Countdown to budget exhaustion
+- **Visual alert** - Warning banner with urgency indicator
+
+### Spend trend chart
+
+Interactive chart showing:
+- **Historical spend** - Actual daily costs (solid line)
+- **Projected spend** - Forecasted future costs (dashed line)
+- **Budget line** - Budget limit reference (dotted line)
+
+**Features:**
+- Hover for exact daily amounts
+- See cumulative spend over time
+- Visual indication when projected to exceed budget
+- Automatic period selection (defaults to current month)
+
+### Budget alerts
+
+Real-time alerts appear when:
+- Budget reaches 80% threshold
+- Projected to exceed budget
+- Budget already exceeded
+- Burn rate exceeds 1.2x
+
+**Alert badges** show in the UI with:
+- Severity level (warning/critical/exceeded)
+- Current vs projected spend
+- Days until exhaustion
+- Quick recommendations
+
+### How forecasting works
+
+The platform uses **linear projection** based on your current burn rate:
+
+```
+daily_rate = current_spend / days_elapsed
+projected_spend = daily_rate × total_days_in_period
+```
+
+**Confidence increases** with more data:
+- First few days: ~50% confidence
+- Mid-period: ~70% confidence
+- Late period: ~90% confidence
+
+### Setting budget periods
+
+Budgets can be configured for:
+- **Current month** (default)
+- **Custom date range**
+- **Rolling 30 days**
+
+API example:
+```http
+GET /api/v1/budgets/forecast?budget=500.0&period_start=2025-01-01&period_end=2025-01-31
+```
+
+### Budget alert emails
+
+Configure email alerts (coming soon):
+- Threshold alerts (at 80%, 90%, 100%)
+- Daily budget summaries
+- Weekly forecast updates
+- Exceeded budget notifications
 
 ## Common workflows
 

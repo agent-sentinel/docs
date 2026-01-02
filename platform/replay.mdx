@@ -23,5 +23,261 @@ This inspects recorded inputs and flags common sources of non-determinism (times
 GET /api/v1/replay/analysis/{run_id}
 ```
 
-Returns a “determinism score” and recommendations.
+Returns a comprehensive "determinism score" and actionable recommendations.
 
+### What it analyzes
+
+The determinism analyzer performs **static analysis** on your run's actions to identify patterns that indicate non-deterministic behavior:
+
+**Timestamp dependencies**
+- `datetime.now()`, `time.time()`, `current_time`
+- Actions that depend on current timestamps
+- Date/time-based logic that varies per execution
+
+**Random value generation**
+- `random.random()`, `random.randint()`, `random.choice()`
+- Unseeded random number generators
+- Stochastic sampling
+
+**UUID generation**
+- `uuid.uuid4()` and other UUID variants
+- Auto-generated IDs that change per run
+- Non-deterministic identifiers
+
+**Process/environment dependencies**
+- `os.getpid()`, process IDs
+- `socket.gethostname()`, hostnames
+- Platform-specific values
+
+**API variability**
+- Request IDs, trace IDs, session IDs
+- Dynamic response fields that change per call
+- Non-deterministic external service responses
+
+**Order-dependent operations**
+- Dictionary iteration (Python < 3.7)
+- Set operations with undefined order
+- Concurrent operations without synchronization
+
+### Response format
+
+```json
+{
+  "run_id": "a1b2c3d4-...",
+  "total_actions": 42,
+  "determinism_score": 85,
+  "score_severity": "moderate",
+  "issues_found": 6,
+  "patterns_detected": {
+    "timestamp": 2,
+    "random": 1,
+    "uuid": 2,
+    "process_id": 0,
+    "environmental": 0,
+    "api_variability": 1,
+    "order_dependent": 0
+  },
+  "issues": [
+    {
+      "action_index": 3,
+      "action_name": "generate_report",
+      "action_id": "abc123...",
+      "issues": [
+        {
+          "type": "timestamp_dependency",
+          "severity": "high",
+          "description": "Action uses timestamp or current time in inputs",
+          "recommendation": "Use fixed timestamps for testing or mock time functions"
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "Action 5 (call_external_api) resulted in error"
+  ],
+  "recommendations": [
+    {
+      "priority": "high",
+      "category": "determinism",
+      "title": "Remove timestamp dependencies",
+      "description": "2 actions use current timestamps which will vary on each execution",
+      "solution": "Use fixed timestamps for testing or inject time via parameters",
+      "code_example": "# Instead of:\nreport_time = datetime.now()\n\n# Use:\nreport_time = datetime(2025, 1, 3, 12, 0, 0)"
+    },
+    {
+      "priority": "medium",
+      "category": "random",
+      "title": "Seed random number generators",
+      "description": "Random values detected without explicit seeding",
+      "solution": "Set a seed for reproducible random values",
+      "code_example": "import random\nrandom.seed(42)  # Fixed seed for deterministic testing"
+    }
+  ],
+  "summary": "Run has moderate determinism issues. Found 6 issues across 42 actions."
+}
+```
+
+### Determinism score
+
+The **determinism score** (0-100) indicates how reliably the run could be replayed:
+
+- **90-100** 🟢 - High reliability, minimal issues
+- **70-89** 🟡 - Moderate risk, some non-deterministic patterns
+- **0-69** 🔴 - High risk, significant non-determinism
+
+**Score calculation:**
+```
+base_score = 100
+penalty_per_issue = 100 / (total_actions + 1)
+final_score = max(0, base_score - (issues_found × penalty_per_issue))
+```
+
+Actions with more issues get penalized more heavily.
+
+### Issue severity levels
+
+**High severity** - Definitely causes non-determinism:
+- Timestamp dependencies
+- Random value generation
+- Unseeded randomness
+
+**Medium severity** - Likely causes issues:
+- UUID generation
+- Environment dependencies
+- Process-specific values
+
+**Low severity** - May cause issues:
+- API variability (trace IDs, etc.)
+- Order-dependent operations
+
+### Recommendations format
+
+Each recommendation includes:
+- **Priority** - high/medium/low
+- **Category** - determinism/performance/reliability
+- **Title** - Brief summary
+- **Description** - What the issue is
+- **Solution** - How to fix it
+- **Code example** - Concrete fix (optional)
+
+### Using in the console
+
+The determinism analysis is available in the Console UI:
+
+1. Navigate to **Runs** page
+2. Click on a specific run
+3. Click **Analyze Determinism** button
+4. View the analysis with:
+   - Determinism score and severity badge
+   - Patterns detected summary
+   - Detailed issues by action
+   - Prioritized recommendations with code examples
+
+### Example issues and fixes
+
+**Issue: Timestamp dependency**
+```python
+# ❌ Non-deterministic
+def generate_report():
+    timestamp = datetime.now()
+    return f"Report generated at {timestamp}"
+
+# ✅ Deterministic
+def generate_report(report_time: datetime):
+    return f"Report generated at {report_time}"
+```
+
+**Issue: Random generation**
+```python
+# ❌ Non-deterministic
+import random
+def select_sample():
+    return random.choice(items)
+
+# ✅ Deterministic
+import random
+random.seed(42)
+def select_sample():
+    return random.choice(items)
+```
+
+**Issue: UUID generation**
+```python
+# ❌ Non-deterministic
+import uuid
+def create_id():
+    return str(uuid.uuid4())
+
+# ✅ Deterministic
+def create_id(seed: int = 0):
+    # Use deterministic ID generation
+    return f"id_{seed}_{hash(seed)}"
+```
+
+### Limitations
+
+**What it CAN detect:**
+- Static patterns in inputs/outputs
+- Known non-deterministic keywords
+- Common anti-patterns
+
+**What it CANNOT detect:**
+- Non-deterministic behavior in external services
+- Race conditions in concurrent code
+- Hardware-dependent behavior
+- Implicit state dependencies
+
+For actual replay validation, use the SDK's [Replay Mode](/sdk/python/replay).
+
+### Best practices
+
+<Tip>
+**Run analysis regularly**: Check determinism after significant changes to catch issues early.
+</Tip>
+
+<Tip>
+**Fix high-priority issues first**: Start with timestamp and random dependencies - they have the biggest impact.
+</Tip>
+
+<Tip>
+**Use with SDK replay**: Combine analysis (static) with SDK replay (dynamic) for comprehensive testing.
+</Tip>
+
+<Warning>
+**False positives are possible**: The analyzer uses heuristics. Review recommendations and decide what makes sense for your use case.
+</Warning>
+
+### API usage
+
+```bash
+# Get determinism analysis for a run
+curl -X GET "https://platform.example.com/api/v1/replay/analysis/{run_id}" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Integration with CI/CD
+
+Check determinism in your pipeline:
+
+```bash
+#!/bin/bash
+# .github/workflows/test.yml
+
+# Run agent tests
+python -m pytest tests/
+
+# Get latest run ID from tests
+RUN_ID=$(cat latest_run_id.txt)
+
+# Analyze determinism
+SCORE=$(curl -s "https://platform.example.com/api/v1/replay/analysis/$RUN_ID" \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.determinism_score')
+
+# Fail if score too low
+if [ "$SCORE" -lt 80 ]; then
+  echo "Determinism score too low: $SCORE"
+  exit 1
+fi
+
+echo "Determinism check passed: $SCORE"
+```

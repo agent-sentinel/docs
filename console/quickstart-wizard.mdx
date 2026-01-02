@@ -1,0 +1,294 @@
+---
+title: "Quick Start Wizard"
+description: "Get your first agent integrated in under 2 minutes with the interactive setup wizard."
+---
+
+## Overview
+
+The **Quick Start Wizard** is an interactive onboarding experience that guides new users through setting up their first Agent Sentinel integration. It appears automatically for first-time users and can be accessed anytime from the dashboard.
+
+## When it appears
+
+The wizard shows:
+- **First login** - Automatically on first console access
+- **Empty dashboard** - When no agents are connected
+- **Manual trigger** - Click "Quick Start" button in settings
+
+## Wizard steps
+
+### Step 1: Welcome
+
+**What you see:**
+- Welcome message and overview
+- Three key benefits:
+  - 🔑 **Auth** - Secure API keys for your agents
+  - 💻 **SDK** - Simple drop-in code snippets
+  - 🛡️ **Guard** - Real-time policy enforcement
+- "Get Started" button to proceed
+
+**Purpose:** Orient new users to what Agent Sentinel provides.
+
+### Step 2: Create API Key
+
+**What you see:**
+- Input field for key description
+- "Generate & Continue" button
+- Note about managing keys later
+
+**What happens:**
+- Enter a descriptive name (e.g., "My Awesome Agent")
+- Click Generate
+- System creates API key with full permissions
+- Key is displayed (only time you'll see the full key!)
+
+**Example:**
+```
+Key Description: "Production Trading Bot"
+Generated Key: as_1234567890abcdef...
+```
+
+**Important:** Save this key somewhere safe - you won't see it again!
+
+### Step 3: SDK Setup
+
+**What you see:**
+- Your newly generated API key (highlighted)
+- Code snippets for Python and JavaScript
+- Copy buttons for each snippet
+- Warning banner to save the key
+
+**Python snippet:**
+```python
+from agent_sentinel import Sentinel
+
+# Initialize the sentinel
+sentinel = Sentinel(
+    api_key="as_1234567890abcdef...",
+    base_url="https://console.example.com/api/proxy"
+)
+
+# Protect your agent's execution
+with sentinel.monitor(run_id="my-first-run"):
+    # Your agent logic here
+    result = agent.run("Hello world")
+    sentinel.log_action("llm_call", inputs={"prompt": "Hello world"}, outputs=result)
+```
+
+**JavaScript snippet:**
+```javascript
+import { Sentinel } from '@agent-sentinel/sdk';
+
+// Initialize the sentinel
+const sentinel = new Sentinel({
+  apiKey: 'as_1234567890abcdef...',
+  baseUrl: 'https://console.example.com/api/proxy'
+});
+
+// Protect your agent's execution
+await sentinel.monitor('my-first-run', async () => {
+  // Your agent logic here
+  const result = await agent.run('Hello world');
+  await sentinel.logAction('llm_call', {
+    inputs: { prompt: 'Hello world' },
+    outputs: result
+  });
+});
+```
+
+**Features:**
+- **One-click copy** - Copy entire snippet
+- **Pre-filled API key** - Your actual key is included
+- **Auto-configured URL** - Base URL points to current console
+- **Language toggle** - Switch between Python and JavaScript
+
+### Step 4: Complete
+
+**What you see:**
+- Success checkmark and celebration
+- "You're All Set!" message
+- Instructions to start agent
+- "Enter Console" button
+
+**What happens:**
+- Click "Enter Console" to start using Agent Sentinel
+- Dashboard will show data once agent starts sending telemetry
+
+## Skipping the wizard
+
+You can skip at any time:
+- **Step 1**: Click "Skip for now" 
+- **Other steps**: Click browser back or close
+
+Skipped wizards can be restarted from Settings → Quick Start.
+
+## After completing
+
+Once complete:
+1. **Paste code** into your agent
+2. **Start agent** - Run it normally
+3. **View dashboard** - Data appears within seconds
+4. **Explore features**:
+   - View runs in Runs page
+   - Check ledger in Activity Ledger
+   - Set budgets in Settings
+
+## Design features
+
+The wizard includes:
+
+### Progress indicator
+- Progress bar at top shows % complete
+- Steps: 25%, 50%, 75%, 100%
+
+### Navigation
+- "Back" button to return to previous step
+- "Continue" or "Next" buttons to proceed
+- "Skip" option on first step
+
+### Code copying
+Copy buttons show feedback:
+- Default: "Copy Python" / "Copy JS"
+- After click: "✓ Copied" (2 second confirmation)
+
+### Visual polish
+- Step-by-step progression
+- Clear CTAs (call-to-action buttons)
+- Visual icons for each benefit
+- Professional dark code blocks
+- Responsive design (mobile-friendly)
+
+## Restarting the wizard
+
+To restart later:
+1. Go to **Settings** page
+2. Scroll to "Quick Start"
+3. Click "Launch Wizard"
+
+Or:
+- Add `?wizard=true` to dashboard URL
+- Click "Quick Start" in help menu
+
+## Customization (self-hosted)
+
+Self-hosted users can customize:
+
+**Environment variables:**
+```bash
+# Disable wizard entirely
+DISABLE_QUICK_START=true
+
+# Change default code examples
+QUICK_START_PYTHON_TEMPLATE=/path/to/template.py
+QUICK_START_JS_TEMPLATE=/path/to/template.js
+
+# Auto-skip for specific domains
+SKIP_WIZARD_DOMAINS=internal.company.com
+```
+
+**Code templates:**
+Templates support variables:
+- `{{api_key}}` - User's generated key
+- `{{base_url}}` - Console base URL
+- `{{user_id}}` - User's ID
+- `{{org_id}}` - Organization ID
+
+## Best practices
+
+<Tip>
+**Save the API key**: Write it down or save to password manager immediately - you can't retrieve it later!
+</Tip>
+
+<Tip>
+**Test immediately**: After completing wizard, run your agent to verify integration works.
+</Tip>
+
+<Tip>
+**Use descriptive names**: Name API keys descriptively (e.g., "Production Bot", "Dev Testing") for easier management.
+</Tip>
+
+<Warning>
+**Don't commit keys**: Never commit API keys to version control. Use environment variables instead.
+</Warning>
+
+<Tip>
+**One key per environment**: Create separate keys for development, staging, and production.
+</Tip>
+
+## Common issues
+
+### "Generate button doesn't work"
+
+- Ensure key description is filled in
+- Try refreshing the page
+- Check browser console for errors
+- Contact support if persists
+
+### "Code doesn't work"
+
+Make sure to:
+- Install the SDK (`pip install agent-sentinel`)
+- Use the exact API key from wizard
+- Check base URL matches your console
+- Verify network connectivity
+
+### "Lost my API key"
+
+If you didn't save the key:
+1. Go to Settings → API Keys
+2. Delete the old key
+3. Create a new key
+4. Update your agent code
+
+### "Want to skip a step"
+
+You can navigate back or close the wizard at any time. Access it again from Settings.
+
+## Security considerations
+
+### API key security
+- Keys are shown **only once** during wizard
+- Keys are hashed before storage
+- Full key is never retrievable after creation
+- Delete compromised keys immediately
+
+### Best practices
+- Use separate keys per agent
+- Rotate keys regularly
+- Store in secret management system
+- Monitor key usage in Settings → API Keys
+
+## For teams
+
+### Team onboarding
+1. **Admin** completes wizard first
+2. **Admin** shares code template (without API key)
+3. **Team members** create their own keys
+4. **Everyone** uses same base URL
+
+### Multiple agents
+- Run wizard once for first agent
+- Create additional keys in Settings → API Keys
+- Each agent can use same or different keys
+
+## Analytics
+
+The wizard tracks:
+- Completion rate
+- Drop-off points
+- Time to completion
+- Most copied snippets
+
+This data helps improve the onboarding experience.
+
+## Keyboard shortcuts
+
+- `Enter` - Continue to next step
+- `Esc` - Close/skip wizard
+- `Cmd/Ctrl + C` - Copy code snippet (when focused)
+
+## See also
+
+- [Settings](/console/settings) - Manage API keys
+- [Installation](/sdk/python/installation) - SDK installation guide
+- [Quickstart](/quickstart) - Manual setup guide
+- [Overview](/console/overview) - Console tour

@@ -1,0 +1,406 @@
+---
+title: "Cost Tracking"
+description: "Track and accumulate costs at session, run, and action levels with the CostTracker."
+---
+
+## Overview
+
+The `CostTracker` is a thread-safe singleton that accumulates costs across your agent's execution. It works alongside the ledger to provide real-time cost visibility at multiple scopes:
+
+- **Session** - Entire application lifetime
+- **Run** - Single agent execution (e.g., one task)
+- **Action** - Individual operations (automatically tracked by `@guarded_action`)
+
+## Basic Usage
+
+### Adding costs manually
+
+```python
+from agent_sentinel import CostTracker
+
+# Record a cost for an action
+CostTracker.add_cost("search_web", 0.02)
+CostTracker.add_cost("call_llm", 0.15)
+
+# Check totals
+session_total = CostTracker.get_session_total()  # $0.17
+run_total = CostTracker.get_run_total()          # $0.17
+
+print(f"Session cost: ${session_total:.4f}")
+print(f"Run cost: ${run_total:.4f}")
+```
+
+### Run-level tracking
+
+```python
+from agent_sentinel import CostTracker
+
+# Start of a new run
+CostTracker.reset_run()
+
+# Do work
+CostTracker.add_cost("action_1", 0.05)
+CostTracker.add_cost("action_2", 0.03)
+
+print(f"Run cost: ${CostTracker.get_run_total():.4f}")  # $0.08
+
+# Start next run
+CostTracker.reset_run()
+print(f"New run cost: ${CostTracker.get_run_total():.4f}")  # $0.00
+print(f"Session total: ${CostTracker.get_session_total():.4f}")  # $0.08
+```
+
+## Automatic Cost Tracking
+
+### With @guarded_action
+
+Costs are automatically tracked when you use `@guarded_action`:
+
+```python
+from agent_sentinel import guarded_action, CostTracker
+
+@guarded_action(name="expensive_operation", cost_usd=0.50)
+def expensive_operation():
+    return "result"
+
+# Call it
+expensive_operation()
+
+# Cost automatically added
+print(CostTracker.get_run_total())  # $0.50
+```
+
+### With LLM instrumentation
+
+LLM calls are automatically tracked when instrumentation is enabled:
+
+```python
+from agent_sentinel.integrations import instrument_openai, get_token_costs
+from agent_sentinel import CostTracker
+from openai import OpenAI
+
+instrument_openai()
+client = OpenAI()
+
+# Make LLM call
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+# Cost automatically tracked
+print(CostTracker.get_run_total())  # e.g., $0.0015
+
+# Get detailed LLM costs
+costs = get_token_costs()
+print(costs["by_provider"]["openai"])  # $0.0015
+```
+
+## Action Statistics
+
+Track per-action metrics:
+
+```python
+from agent_sentinel import CostTracker
+
+# Record some actions
+CostTracker.add_cost("search_web", 0.02)
+CostTracker.add_cost("search_web", 0.02)
+CostTracker.add_cost("call_llm", 0.15)
+
+# Get stats for specific action
+stats = CostTracker.get_action_stats("search_web")
+print(stats)
+# {
+#   "count": 2,
+#   "total_cost": 0.04
+# }
+
+# Get all action stats
+all_stats = CostTracker.get_action_stats()
+print(all_stats)
+# {
+#   "counts": {"search_web": 2, "call_llm": 1},
+#   "costs": {"search_web": 0.04, "call_llm": 0.15}
+# }
+```
+
+## Complete Snapshot
+
+Get all cost data at once:
+
+```python
+from agent_sentinel import CostTracker
+
+snapshot = CostTracker.get_snapshot()
+print(snapshot)
+# {
+#   "session_total": 0.19,
+#   "run_total": 0.19,
+#   "action_counts": {"search_web": 2, "call_llm": 1},
+#   "action_costs": {"search_web": 0.04, "call_llm": 0.15}
+# }
+```
+
+## Multi-Run Example
+
+Typical pattern for agents that process multiple tasks:
+
+```python
+from agent_sentinel import CostTracker
+
+def process_task(task):
+    # Reset for new task
+    CostTracker.reset_run()
+    
+    # Do work (costs automatically tracked)
+    search_results = search_web(task.query)
+    analysis = analyze_with_llm(search_results)
+    
+    # Get run cost
+    run_cost = CostTracker.get_run_total()
+    print(f"Task '{task.name}' cost: ${run_cost:.4f}")
+    
+    return analysis
+
+# Process multiple tasks
+for task in tasks:
+    process_task(task)
+
+# Get total session cost across all tasks
+session_cost = CostTracker.get_session_total()
+print(f"Total session cost: ${session_cost:.2f}")
+```
+
+## Budget Enforcement
+
+Use with PolicyEngine for budget limits:
+
+```python
+from agent_sentinel import CostTracker, PolicyEngine, BudgetExceededError
+
+# Set run budget
+PolicyEngine.configure(run_budget=1.0)
+
+try:
+    # Start new run
+    CostTracker.reset_run()
+    
+    # Do expensive operations
+    for i in range(100):
+        expensive_llm_call()
+        
+        # Check if over budget
+        if CostTracker.get_run_total() > 1.0:
+            raise BudgetExceededError(
+                f"Run budget exceeded: ${CostTracker.get_run_total():.2f}"
+            )
+            
+except BudgetExceededError as e:
+    print(f"Budget exceeded: {e}")
+    # Handle gracefully
+```
+
+## Thread Safety
+
+`CostTracker` is thread-safe and can be used in multi-threaded applications:
+
+```python
+import threading
+from agent_sentinel import CostTracker
+
+def worker(worker_id: int):
+    for i in range(10):
+        CostTracker.add_cost(f"worker_{worker_id}", 0.01)
+
+# Multiple threads can safely update costs
+threads = [threading.Thread(target=worker, args=(i,)) for i in range(5)]
+for t in threads:
+    t.start()
+for t in threads:
+    t.join()
+
+# All costs properly accumulated
+print(CostTracker.get_session_total())  # $0.50 (5 workers × 10 actions × $0.01)
+```
+
+## Resetting
+
+### Reset run only
+
+```python
+# Reset run counter (keeps session total and action stats)
+CostTracker.reset_run()
+```
+
+### Reset everything
+
+```python
+# Reset all counters (useful for testing)
+CostTracker.reset_all()
+```
+
+<Warning>
+`reset_all()` clears session totals and action statistics. Only use this in test environments or at the start of a new session.
+</Warning>
+
+## Integration with Remote Sync
+
+When using remote sync, costs are automatically sent to the platform:
+
+```python
+from agent_sentinel import enable_remote_sync, CostTracker
+
+enable_remote_sync(
+    base_url="https://platform.example.com",
+    api_key="your-key"
+)
+
+# Costs tracked locally and synced to platform
+CostTracker.add_cost("action", 0.05)
+
+# View costs in the console at platform.example.com/analytics
+```
+
+## Common Patterns
+
+### Cost-aware agent loop
+
+```python
+from agent_sentinel import CostTracker
+
+def agent_loop(tasks: list, budget: float):
+    CostTracker.reset_run()
+    
+    for task in tasks:
+        # Check budget before expensive operation
+        if CostTracker.get_run_total() + estimated_cost(task) > budget:
+            print(f"Skipping task - would exceed budget")
+            continue
+        
+        # Execute task
+        result = execute_task(task)
+        
+        # Log actual cost
+        actual_cost = CostTracker.get_run_total()
+        print(f"Task cost: ${actual_cost:.4f}, remaining: ${budget - actual_cost:.4f}")
+```
+
+### Cost reporting
+
+```python
+from agent_sentinel import CostTracker
+
+def print_cost_report():
+    snapshot = CostTracker.get_snapshot()
+    
+    print("=" * 50)
+    print("COST REPORT")
+    print("=" * 50)
+    print(f"Session Total: ${snapshot['session_total']:.4f}")
+    print(f"Run Total: ${snapshot['run_total']:.4f}")
+    print()
+    print("By Action:")
+    for action, cost in snapshot['action_costs'].items():
+        count = snapshot['action_counts'][action]
+        avg = cost / count if count > 0 else 0
+        print(f"  {action}: ${cost:.4f} ({count} calls, avg ${avg:.6f})")
+
+# Call at end of run
+print_cost_report()
+```
+
+### Cost comparison
+
+```python
+from agent_sentinel import CostTracker
+
+# Benchmark different approaches
+def benchmark_approach(name: str, func):
+    CostTracker.reset_run()
+    result = func()
+    cost = CostTracker.get_run_total()
+    print(f"{name}: ${cost:.4f}")
+    return result, cost
+
+# Compare approaches
+result_a, cost_a = benchmark_approach("Approach A", approach_a)
+result_b, cost_b = benchmark_approach("Approach B", approach_b)
+
+if cost_a < cost_b:
+    print(f"Approach A is {((cost_b - cost_a) / cost_b * 100):.1f}% cheaper")
+```
+
+## Best Practices
+
+<Tip>
+**Reset run at task boundaries**: Call `reset_run()` at the start of each distinct task or execution to get per-task costs.
+</Tip>
+
+<Tip>
+**Use action stats for optimization**: Identify your most expensive actions with `get_action_stats()` and optimize those first.
+</Tip>
+
+<Tip>
+**Combine with LLM instrumentation**: Let the SDK automatically track LLM costs - no need to manually calculate token costs.
+</Tip>
+
+<Warning>
+**Don't reset during a run**: Only call `reset_run()` between logical execution boundaries, not in the middle of processing.
+</Warning>
+
+<Tip>
+**Monitor session totals**: Track `get_session_total()` to understand total spending over your application's lifetime.
+</Tip>
+
+## Troubleshooting
+
+### Costs not accumulating
+
+Make sure you're calling `add_cost()` or using instrumented operations:
+
+```python
+# ✅ Cost is tracked
+@guarded_action(name="action", cost_usd=0.05)
+def action():
+    pass
+
+# ❌ Cost not tracked automatically
+def action():
+    pass  # Need to manually call CostTracker.add_cost()
+```
+
+### Run total seems wrong
+
+Check if you forgot to reset between runs:
+
+```python
+# ❌ Run total keeps accumulating
+for task in tasks:
+    process(task)  # Costs keep adding
+
+# ✅ Reset between tasks
+for task in tasks:
+    CostTracker.reset_run()
+    process(task)
+```
+
+### Thread safety issues
+
+`CostTracker` is thread-safe by design, but ensure you're using the class methods, not creating instances:
+
+```python
+# ✅ Correct - use class methods
+from agent_sentinel import CostTracker
+CostTracker.add_cost("action", 0.05)
+
+# ❌ Wrong - don't instantiate
+tracker = CostTracker()  # Error: can't instantiate
+```
+
+## See Also
+
+- [Instrumentation](/sdk/python/instrumentation) - Using @guarded_action for automatic cost tracking
+- [LLM Integrations](/sdk/python/llm-integrations) - Automatic LLM cost tracking
+- [Policies](/sdk/python/policies) - Enforcing budget limits
+- [Analytics](/console/analytics) - Visualizing costs in the console

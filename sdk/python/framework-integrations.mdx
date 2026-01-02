@@ -1,6 +1,6 @@
 ---
 title: "Framework Integrations"
-description: "Integrate Agent Sentinel with LangChain, CrewAI, and other agent frameworks."
+description: "Integrate Agent Sentinel with LangChain, CrewAI, AutoGen, and other agent frameworks."
 ---
 
 ## Overview
@@ -12,6 +12,218 @@ Agent Sentinel provides native integrations with popular agent frameworks, enabl
 - Chain execution
 - Token usage and costs
 - Errors and retries
+
+The "Big Three" frameworks are supported:
+- **LangChain**: Callback-based integration
+- **CrewAI**: Wrapper-based integration  
+- **AutoGen**: Hook-based integration (NEW!)
+
+## AutoGen integration
+
+### SentinelInspector
+
+Microsoft's AutoGen is the leading framework in enterprise environments. Agent Sentinel provides seamless integration using AutoGen's built-in `register_reply` hook system.
+
+```python
+from autogen import AssistantAgent, UserProxyAgent
+from agent_sentinel.integrations.autogen import SentinelInspector
+
+# Create the Sentinel inspector
+sentinel = SentinelInspector(
+    run_name="my_autogen_run",
+    enforce_policies=True,  # Enable active blocking
+    track_costs=True,       # Track LLM costs
+    track_messages=True,    # Track message flow
+)
+
+# Create AutoGen agents as normal
+assistant = AssistantAgent(
+    name="assistant",
+    system_message="You are a helpful AI assistant.",
+    llm_config={
+        "model": "gpt-4",
+        "api_key": "your-api-key-here"
+    }
+)
+
+user_proxy = UserProxyAgent(
+    name="user_proxy",
+    human_input_mode="NEVER",
+    max_consecutive_auto_reply=10,
+)
+
+# Secure the agents with one line each
+sentinel.register(assistant)
+sentinel.register(user_proxy)
+
+# Run as normal - Sentinel is now monitoring everything
+sentinel.start_run()
+
+user_proxy.initiate_chat(
+    assistant,
+    message="What's the weather in San Francisco?"
+)
+
+sentinel.end_run()
+
+# Get execution summary
+summary = sentinel.get_run_summary()
+print(f"Cost: ${summary['run_cost_usd']:.6f}")
+print(f"Messages: {summary['message_count']}")
+print(f"LLM Calls: {summary['llm_call_count']}")
+```
+
+### How it works
+
+AutoGen's architecture is different from LangChain/CrewAI:
+
+1. **Agents communicate via messages**: Agents send messages back and forth
+2. **Reply chain system**: AutoGen uses `register_reply()` to inject hooks
+3. **LLM config**: LLMs are configured through `llm_config` dict
+
+Sentinel leverages this by:
+
+1. **Hooking the reply chain** (position 0 = highest priority)
+2. **Wrapping LLM generation** to track token costs
+3. **Monitoring message flow** for audit trail
+
+This is **simpler than CrewAI** because AutoGen has a built-in hook system designed exactly for this purpose!
+
+### What's tracked
+
+The inspector automatically tracks:
+
+1. **Agent-to-agent messages**:
+   - Sender and recipient
+   - Message content (preview)
+   - Message count per agent
+   - Timestamp and sequence
+
+2. **LLM calls**:
+   - Model name
+   - Token usage (prompt + completion)
+   - Calculated cost
+   - Duration
+
+3. **Policy enforcement**:
+   - Authorization checks before replies
+   - Budget validation
+   - Rate limiting
+   - Intervention recording
+
+### Run lifecycle
+
+Mark run boundaries for accurate tracking:
+
+```python
+sentinel = SentinelInspector(run_name="conversation_1")
+
+# Register agents
+sentinel.register(assistant)
+sentinel.register(user_proxy)
+
+# Mark start
+sentinel.start_run()
+
+try:
+    # Run conversation
+    user_proxy.initiate_chat(assistant, message="Hello")
+    
+    # Mark successful completion
+    sentinel.end_run(outcome="completed")
+    
+except Exception as e:
+    # Mark failed completion
+    sentinel.end_run(outcome="failed")
+    raise
+```
+
+### Run summary
+
+Get detailed statistics after execution:
+
+```python
+summary = sentinel.get_run_summary()
+
+print(f"Run: {summary['run_name']}")
+print(f"Duration: {summary['duration_seconds']:.2f}s")
+print(f"Cost: ${summary['run_cost_usd']:.6f}")
+print(f"Messages: {summary['message_count']}")
+print(f"LLM Calls: {summary['llm_call_count']}")
+
+# Per-agent breakdown
+for agent_name, count in summary['agent_message_counts'].items():
+    print(f"  {agent_name}: {count} messages")
+
+# Cost breakdown
+for action, cost in summary['action_costs'].items():
+    print(f"  {action}: ${cost:.6f}")
+```
+
+### Policy enforcement
+
+Sentinel blocks agents that violate policies:
+
+```python
+from agent_sentinel.policy import PolicyEngine
+
+# Set strict budget
+PolicyEngine.configure(run_budget=0.10)  # $0.10 max
+
+sentinel = SentinelInspector(
+    run_name="limited_run",
+    enforce_policies=True  # Active blocking enabled
+)
+
+sentinel.register(assistant)
+sentinel.start_run()
+
+try:
+    # This will be blocked if cost exceeds $0.10
+    user_proxy.initiate_chat(
+        assistant,
+        message="Write a very long essay..."
+    )
+except BudgetExceededError as e:
+    print(f"BLOCKED: {e}")
+    # The assistant was prevented from replying
+```
+
+When blocked, Sentinel:
+1. Returns a blocking message to the agent
+2. Records an intervention for dashboard visibility
+3. Prevents the agent from generating a reply
+4. Raises `BudgetExceededError` to stop execution
+
+### Convenience function
+
+Create and secure agents in one step:
+
+```python
+from agent_sentinel.integrations.autogen import create_sentinel_agents
+from autogen import AssistantAgent, UserProxyAgent
+
+agents, sentinel = create_sentinel_agents(
+    agent_configs=[
+        {
+            "agent_class": AssistantAgent,
+            "name": "assistant",
+            "llm_config": {"model": "gpt-4", "api_key": "..."}
+        },
+        {
+            "agent_class": UserProxyAgent,
+            "name": "user_proxy",
+            "human_input_mode": "NEVER"
+        }
+    ],
+    run_name="my_run"
+)
+
+# Agents are already secured
+sentinel.start_run()
+agents[1].initiate_chat(agents[0], message="Hello!")
+sentinel.end_run()
+```
 
 ## LangChain integration
 
@@ -64,31 +276,80 @@ result = agent_executor.invoke({
 
 The callback handler automatically tracks:
 
-1. **LLM calls**:
-   - Model name
+**1. LLM calls**:
+   - Model name (normalized to pricing database)
    - Prompt tokens
    - Completion tokens
-   - Calculated cost
-   - Latency
+   - Total tokens
+   - Calculated cost (using latest pricing data)
+   - Duration
+   - Run ID and parent run ID (for nested chains)
 
-2. **Tool calls**:
+**2. Tool/function calls**:
    - Tool name
-   - Input arguments
-   - Output/result
+   - Input arguments (first 200 chars)
+   - Output/result (first 200 chars)
    - Duration
-   - Success/failure
+   - Success/failure status
+   - Error details (if failed)
 
-3. **Agent actions**:
-   - Action taken
+**3. Agent actions**:
+   - Tool selection
    - Agent reasoning
-   - Observation
-   - Thought process
+   - Observations
+   - Action outcomes
 
-4. **Chain execution**:
-   - Chain name
-   - Inputs
-   - Outputs
+**4. Chain execution**:
+   - Chain type/name
+   - Chain start/end
    - Duration
+   - Nested chain relationships (parent/child)
+   - Error handling
+
+**5. Policy enforcement** (when `enforce_policies=True`):
+   - Authorization checks before LLM calls
+   - Authorization checks before tool execution
+   - Budget validation
+   - Intervention recording when actions are blocked
+
+### Policy enforcement
+
+Sentinel actively blocks operations that violate policies:
+
+```python
+from agent_sentinel import PolicyEngine, BudgetExceededError
+from agent_sentinel.integrations.langchain import SentinelCallbackHandler
+from langchain_openai import ChatOpenAI
+
+# Set strict budget
+PolicyEngine.configure(run_budget=0.10)  # $0.10 max
+
+sentinel_handler = SentinelCallbackHandler(
+    run_name="limited_run",
+    enforce_policies=True  # Active blocking (default: True)
+)
+
+llm = ChatOpenAI(model="gpt-4", callbacks=[sentinel_handler])
+
+try:
+    # LLM call authorization checked BEFORE API call
+    response = llm.invoke("Write a very long essay...")
+    # If current spend + estimated cost > budget, blocked
+except BudgetExceededError as e:
+    print(f"BLOCKED: {e}")
+    # LLM call was prevented
+    # Intervention recorded for dashboard
+```
+
+When blocked:
+1. `on_llm_start()` runs authorization check
+2. `PolicyEngine.check_action()` validates budget
+3. If violation, `BudgetExceededError` is raised
+4. Intervention is recorded (type, reason, cost, inputs)
+5. LLM call never reaches the API
+6. Exception propagates to your code
+
+The same authorization happens for tools via `on_tool_start()`.
 
 ### Run summary
 
@@ -126,59 +387,174 @@ result = await chain.ainvoke({"input": "Hello"})
 
 ### SentinelCrew wrapper
 
-Wrap CrewAI crews for automatic tracking:
+`SentinelCrew` provides **automatic security injection** for CrewAI - transforming it from passive tracking to active "Visa-like" control:
 
 ```python
-from agent_sentinel.integrations.crewai import SentinelCrew, SentinelAgent
-from crewai import Task
+from crewai import Agent, Task
+from crewai_tools import SerperDevTool
+from agent_sentinel.integrations.crewai import SentinelCrew
 
-# Create agents with Sentinel tracking
-researcher = SentinelAgent(
+# Standard CrewAI setup - NO CHANGES NEEDED
+search_tool = SerperDevTool()
+
+researcher = Agent(
     role="Researcher",
     goal="Research topics thoroughly",
-    backstory="Expert researcher",
-    agent_id="researcher-agent"
+    backstory="Expert researcher with attention to detail",
+    tools=[search_tool],  # Tools are auto-secured!
+    verbose=True
 )
 
-writer = SentinelAgent(
+writer = Agent(
     role="Writer",
-    goal="Write compelling content",
-    backstory="Professional writer",
-    agent_id="writer-agent"
+    goal="Write compelling content based on research",
+    backstory="Professional writer with 10 years experience",
+    verbose=True
 )
 
 # Define tasks
 research_task = Task(
-    description="Research the topic of AI safety",
+    description="Research the latest trends in AI safety for 2025",
     agent=researcher,
-    expected_output="Research findings"
+    expected_output="Detailed research findings with citations"
 )
 
 writing_task = Task(
-    description="Write an article based on research",
+    description="Write a 500-word article based on the research",
     agent=writer,
-    expected_output="Article content",
+    expected_output="Publication-ready article",
     context=[research_task]
 )
 
-# Create crew with Sentinel tracking
+# SentinelCrew automatically secures everything
 crew = SentinelCrew(
     agents=[researcher, writer],
     tasks=[research_task, writing_task],
-    verbose=True,
-    agent_id="content-crew",
-    run_id="run-456"
+    run_name="ai_safety_article",
+    enforce_policies=True,   # Active blocking (default: True)
+    max_agent_steps=50,      # Prevent runaway agents
+    detect_loops=True,       # Detect infinite loops
+    verbose=True
 )
 
-# Execute - all tasks and actions tracked
+# Fully secured execution
 result = crew.kickoff()
 
-# Get run summary
+# Get detailed summary
 summary = crew.get_run_summary()
-print(f"Total cost: ${summary['total_cost_usd']:.4f}")
-print(f"Tasks completed: {summary['tasks_completed']}")
-print(f"Total actions: {summary['total_actions']}")
+print(f"Duration: {summary['duration_seconds']:.2f}s")
+print(f"Cost: ${summary['run_cost_usd']:.6f}")
+print(f"Agents: {summary['num_agents']}")
+print(f"Tasks: {summary['num_tasks']}")
 ```
+
+### What's automatically secured
+
+`SentinelCrew` injects security at three levels:
+
+**1. Tool Injection (The "Chip Reader")**
+- Wraps ALL agent tools automatically
+- No manual decoration required
+- Works with SerperDevTool, DuckDuckGoSearch, FileReadTool, etc.
+- Authorization checks run BEFORE tool execution
+- Failed authorization blocks the tool and records intervention
+
+**2. LLM Monitoring (The "LLM Meter")**
+- Attaches `SentinelCallbackHandler` to all agent LLMs
+- Tracks token costs in real-time
+- Enforces budget limits before expensive API calls
+- Works with OpenAI, Anthropic, and other LangChain-compatible LLMs
+
+**3. Step Monitoring (The "Safety Net")**
+- Tracks agent step counts
+- Detects runaway agents (infinite loops)
+- Enforces `max_agent_steps` limit
+- Identifies repetition patterns
+- Records interventions when agents are stopped
+
+### Run summary
+
+Get comprehensive execution statistics:
+
+```python
+summary = crew.get_run_summary()
+
+# Output:
+{
+    "run_name": "ai_safety_article",
+    "num_agents": 2,
+    "num_tasks": 2,
+    "duration_seconds": 45.7,
+    "run_cost_usd": 0.234,
+    "total_cost_usd": 0.234,
+    "action_counts": {
+        "tool:search_tool": 3,
+        "llm_call:gpt-4o": 5
+    },
+    "action_costs": {
+        "llm_call:gpt-4o": 0.234
+    },
+    "started_at": 1704390000.0,
+    "completed_at": 1704390045.7
+}
+```
+
+### Policy enforcement example
+
+Prevent runaway costs with active blocking:
+
+```python
+from agent_sentinel import PolicyEngine, BudgetExceededError
+from agent_sentinel.integrations.crewai import SentinelCrew
+
+# Set strict budget
+PolicyEngine.configure(run_budget=0.50)  # $0.50 max
+
+crew = SentinelCrew(
+    agents=[researcher, writer],
+    tasks=[research_task, writing_task],
+    run_name="limited_run",
+    enforce_policies=True  # Active blocking enabled
+)
+
+try:
+    result = crew.kickoff()
+except BudgetExceededError as e:
+    print(f"BLOCKED: {e}")
+    # Tool or LLM call was prevented from executing
+    # Intervention recorded for dashboard visibility
+```
+
+When a tool or LLM is blocked:
+1. Authorization fails before execution
+2. Intervention is recorded (type, reason, risk level)
+3. `BudgetExceededError` or `PolicyViolationError` is raised
+4. Agent execution stops cleanly
+5. Visible in Console → Interventions page
+
+### Runaway agent protection
+
+Prevent infinite loops and excessive iterations:
+
+```python
+crew = SentinelCrew(
+    agents=[researcher],
+    tasks=[task],
+    run_name="protected_run",
+    max_agent_steps=50,      # Stop after 50 steps
+    detect_loops=True,       # Detect repetition
+)
+
+# If agent exceeds 50 steps or repeats the same action 5 times:
+# - PolicyViolationError is raised
+# - Intervention is recorded
+# - Execution stops
+# - Dashboard shows the issue
+```
+
+**Loop detection**: If an agent repeats the same action 5+ times in a row, a warning is logged and an intervention is recorded.
+
+**Step limit**: If an agent exceeds `max_agent_steps`, a critical intervention is recorded and execution is blocked.
 
 ### Wrapping existing crews
 
@@ -207,24 +583,43 @@ summary = wrapped_crew.get_run_summary()
 
 ### Individual action wrapping
 
-For fine-grained control, wrap individual crew actions:
+For fine-grained control, wrap individual actions:
 
 ```python
 from agent_sentinel.integrations.crewai import wrap_crew_action
 from crewai import Agent, Task
 
-@wrap_crew_action(action_name="web_search", cost_usd=0.01)
+@wrap_crew_action(name="web_search", cost_usd=0.02, tags=["search", "external"])
 def search_web(query: str) -> str:
+    """Search the web for information."""
     # Your search logic
-    return f"Results for {query}"
+    results = perform_search(query)
+    return results
 
-agent = Agent(
-    role="Researcher",
-    goal="Research topics",
-    backstory="Expert",
-    tools=[search_web]  # Wrapped tool
+@wrap_crew_action(name="analyze_data", cost_usd=0.01, tags=["analysis"])
+def analyze_data(data: dict) -> dict:
+    """Analyze data and extract insights."""
+    # Your analysis logic
+    insights = extract_insights(data)
+    return insights
+
+# Use wrapped tools with agents
+analyst = Agent(
+    role="Data Analyst",
+    goal="Analyze data and provide insights",
+    backstory="Expert data analyst",
+    tools=[search_web, analyze_data]  # Both tools are tracked
 )
+
+# Each tool execution is logged with:
+# - Action name (web_search, analyze_data)
+# - Cost ($0.02, $0.01)
+# - Duration
+# - Tags (search, external, analysis)
+# - Success/failure status
 ```
+
+The `@wrap_crew_action` decorator is a thin wrapper around `@guarded_action` that adds CrewAI-specific tags and metadata.
 
 ## Custom framework integration
 

@@ -1,0 +1,349 @@
+---
+title: "Determinism Analysis"
+description: "Analyze runs for non-deterministic patterns and get actionable recommendations."
+---
+
+## Overview
+
+The **Determinism Analysis** feature helps you identify and fix non-deterministic behavior in your agents. Available directly in the console, it performs comprehensive static analysis on any run to detect patterns that would cause different results on replay.
+
+## Accessing the analyzer
+
+1. Navigate to the **Runs** page
+2. Click on any run to view details
+3. Click the **"Analyze Determinism"** button
+4. View the comprehensive analysis
+
+## Determinism score
+
+The analysis provides a **score from 0-100** indicating replay reliability:
+
+**Score ranges:**
+- 🟢 **90-100** - High Reliability: Minimal issues, safe to replay
+- 🟡 **70-89** - Moderate Risk: Some non-deterministic patterns detected
+- 🔴 **0-69** - High Risk: Significant non-determinism, replay likely to fail
+
+The score appears prominently with:
+- Large numeric display
+- Color-coded badge
+- Progress bar visualization
+- Severity label
+
+## Analysis summary
+
+Key metrics at a glance:
+- **Total actions** analyzed
+- **Issues found** count
+- **Summary** description of findings
+- **Days elapsed** since run
+
+## Patterns detected
+
+The analyzer categorizes issues by type:
+
+### Timestamp dependencies
+Actions that use current time:
+- `datetime.now()`
+- `time.time()`
+- Date/time-based logic
+
+**Impact:** Different timestamps on each run cause different behavior.
+
+### Random generation
+Unseeded random values:
+- `random.random()`
+- `random.randint()`
+- `random.choice()`
+
+**Impact:** Stochastic results vary per execution.
+
+### UUID generation
+Auto-generated identifiers:
+- `uuid.uuid4()`
+- Dynamic ID creation
+- Non-deterministic keys
+
+**Impact:** Different IDs on each run break replay.
+
+### Process/environment
+System-specific values:
+- `os.getpid()`
+- `socket.gethostname()`
+- Platform details
+
+**Impact:** Behavior varies across systems.
+
+### API variability
+Dynamic service responses:
+- Request IDs
+- Trace IDs
+- Session tokens
+
+**Impact:** External services return different metadata.
+
+### Order-dependent
+Undefined ordering:
+- Dict iteration (old Python)
+- Set operations
+- Concurrent operations
+
+**Impact:** Execution order varies per run.
+
+## Detailed issues view
+
+Each issue shows:
+
+### Action context
+- Action name
+- Action index (position in run)
+- Action ID (for reference)
+
+### Issue details
+- **Type** - Category of issue
+- **Severity** - High/Medium/Low
+- **Description** - What the problem is
+- **Recommendation** - How to fix it
+
+**Example:**
+```
+Action: generate_report (#3)
+├─ Type: timestamp_dependency
+├─ Severity: HIGH
+├─ Description: Action uses timestamp or current time in inputs
+└─ Recommendation: Use fixed timestamps for testing or mock time functions
+```
+
+## Smart recommendations
+
+AI-powered suggestions with:
+
+### Priority levels
+- 🔴 **High** - Fix immediately (blocks reliable replay)
+- 🟡 **Medium** - Fix soon (likely causes issues)
+- 🟢 **Low** - Fix eventually (may cause issues)
+
+### Categories
+- **Determinism** - Non-deterministic patterns
+- **Performance** - Optimization opportunities
+- **Reliability** - Error handling improvements
+
+### Detailed guidance
+Each recommendation includes:
+- **Title** - Brief summary
+- **Description** - Full explanation
+- **Solution** - Step-by-step fix
+- **Code example** - Concrete implementation
+
+**Example recommendation:**
+
+```
+🔴 HIGH PRIORITY | Determinism
+
+Remove timestamp dependencies
+
+Description:
+2 actions use current timestamps which will vary on each execution
+
+Solution:
+Use fixed timestamps for testing or inject time via parameters
+
+Code Example:
+# Instead of:
+report_time = datetime.now()
+
+# Use:
+report_time = datetime(2025, 1, 3, 12, 0, 0)
+```
+
+## Warnings section
+
+Additional context about the run:
+- Failed actions
+- Error outcomes
+- Incomplete executions
+- Data quality issues
+
+## Visual features
+
+The analysis UI includes:
+
+### Progress bar
+Visual representation of determinism score:
+- Green for high scores
+- Yellow for moderate
+- Red for low scores
+
+### Badge system
+Quick visual indicators:
+- Severity badges (info/warning/critical)
+- Status badges (passed/failed)
+- Category tags
+
+### Tabbed interface
+Toggle between:
+- **Recommendations** tab - Prioritized fixes
+- **Issues** tab - Detailed problems by action
+
+### Collapsible sections
+Expand/collapse:
+- Individual issues
+- Code examples
+- Action groups
+
+## Common patterns and fixes
+
+### Pattern: Using current time
+
+**❌ Non-deterministic:**
+```python
+@guarded_action(name="log_event")
+def log_event(message: str):
+    timestamp = datetime.now()
+    return {"message": message, "time": timestamp}
+```
+
+**✅ Deterministic:**
+```python
+@guarded_action(name="log_event")
+def log_event(message: str, event_time: datetime):
+    return {"message": message, "time": event_time}
+```
+
+### Pattern: Random sampling
+
+**❌ Non-deterministic:**
+```python
+@guarded_action(name="select_sample")
+def select_sample(items: list):
+    return random.sample(items, 5)
+```
+
+**✅ Deterministic:**
+```python
+@guarded_action(name="select_sample")
+def select_sample(items: list, seed: int = 42):
+    random.seed(seed)
+    return random.sample(items, 5)
+```
+
+### Pattern: UUID generation
+
+**❌ Non-deterministic:**
+```python
+@guarded_action(name="create_task")
+def create_task(name: str):
+    task_id = str(uuid.uuid4())
+    return {"id": task_id, "name": name}
+```
+
+**✅ Deterministic:**
+```python
+@guarded_action(name="create_task")
+def create_task(name: str, task_id: str):
+    return {"id": task_id, "name": name}
+```
+
+## Integration with replay
+
+Determinism analysis complements the SDK's [Replay Mode](/sdk/python/replay):
+
+**Workflow:**
+1. **Run** agent normally → generates ledger
+2. **Analyze** determinism in console → identifies issues
+3. **Fix** issues following recommendations
+4. **Replay** with SDK → validates fixes
+5. **Compare** original vs replay → confirms determinism
+
+## Exporting results
+
+Download analysis for:
+- **Code review** - Share with team
+- **Documentation** - Track improvements
+- **CI/CD integration** - Automated checks
+- **Reporting** - Management visibility
+
+Export formats:
+- JSON (for automation)
+- PDF (for reports)
+- CSV (for tracking)
+
+## Best practices
+
+<Tip>
+**Analyze before deploying**: Check determinism of new agents before production deployment.
+</Tip>
+
+<Tip>
+**Fix high-priority first**: Timestamp and random dependencies have the biggest impact - start there.
+</Tip>
+
+<Tip>
+**Regular checks**: Run analysis weekly or after significant changes.
+</Tip>
+
+<Warning>
+**Static analysis has limits**: The analyzer can't detect all issues (e.g., race conditions). Use with SDK replay for full validation.
+</Warning>
+
+<Tip>
+**Share results**: Export and share analyses with your team for collective improvement.
+</Tip>
+
+## Keyboard shortcuts
+
+- `a` - Toggle analysis view
+- `r` - Show recommendations
+- `i` - Show issues
+- `e` - Export results
+
+## Common questions
+
+### "Score seems low but my agent works fine"
+
+A low score means the agent isn't **reproducible**, not that it doesn't work. For testing, debugging, and compliance, you need deterministic behavior.
+
+### "Can I ignore low-severity issues?"
+
+Low-severity issues **may** cause problems depending on your use case:
+- For testing/debugging: Fix them
+- For production monitoring: Can usually ignore
+- For compliance: May need to fix (check requirements)
+
+### "Analysis shows false positives"
+
+The analyzer uses heuristics and may flag legitimate patterns. Review each recommendation and decide if it applies to your use case.
+
+### "How often should I run analysis?"
+
+Recommended frequency:
+- **Development**: Before each commit
+- **Staging**: Before each deployment
+- **Production**: Weekly or after incidents
+
+## Troubleshooting
+
+### Analysis fails to load
+
+- Verify run exists and you have access
+- Check run has completed (not in progress)
+- Try refreshing the page
+- Check browser console for errors
+
+### Issues seem incorrect
+
+The analyzer looks for **patterns** that typically indicate non-determinism. Review the specific issue and decide if it applies to your code.
+
+### No recommendations shown
+
+If score is 90+, there may be no recommendations. The analyzer only suggests fixes for detected issues.
+
+### Analysis takes too long
+
+Large runs (1000+ actions) may take 10-30 seconds to analyze. Be patient or try analyzing smaller runs first.
+
+## See also
+
+- [Replay (SDK)](/sdk/python/replay) - Actual replay execution
+- [Replay (Platform)](/platform/replay) - API documentation
+- [Runs](/console/runs) - View run history
+- [Activity Ledger](/console/ledger) - Action details

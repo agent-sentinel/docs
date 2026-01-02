@@ -1,0 +1,330 @@
+---
+title: "Retry & Resilience"
+description: "Exponential backoff, circuit breakers, and error handling for reliable agent operations."
+---
+
+## Overview
+
+The Agent Sentinel SDK provides robust retry and resilience patterns to handle transient failures gracefully. These utilities are especially useful for:
+
+- Network operations that may fail temporarily
+- Remote sync to the platform
+- LLM API calls with rate limits
+- External service integrations
+
+## Retry with Exponential Backoff
+
+The `@with_retry` decorator automatically retries failed operations with exponential backoff and jitter.
+
+### Basic usage
+
+```python
+from agent_sentinel import with_retry
+
+@with_retry()
+def call_external_api():
+    # May fail due to network issues
+    return requests.get("https://api.example.com/data")
+
+# Automatically retries up to 3 times with exponential backoff
+result = call_external_api()
+```
+
+### Custom configuration
+
+```python
+from agent_sentinel import with_retry, RetryConfig
+
+# Configure retry behavior
+config = RetryConfig(
+    max_attempts=5,           # Try up to 5 times
+    initial_delay=2.0,        # Start with 2 second delay
+    max_delay=60.0,           # Cap at 60 seconds
+    exponential_base=2.0,     # Double delay each time
+    jitter=True,              # Add randomness to prevent thundering herd
+)
+
+@with_retry(config=config)
+def flaky_operation():
+    # Your code here
+    pass
+```
+
+### Retry specific exceptions
+
+```python
+from agent_sentinel import with_retry, RetryConfig, NetworkError, TimeoutError
+
+# Only retry on network and timeout errors
+config = RetryConfig(
+    max_attempts=3,
+    retryable_exceptions=[NetworkError, TimeoutError]
+)
+
+@with_retry(config=config)
+def sensitive_operation():
+    # Only retries if NetworkError or TimeoutError is raised
+    # Other exceptions propagate immediately
+    pass
+```
+
+### Retry callbacks
+
+```python
+from agent_sentinel import with_retry
+
+def on_retry_callback(attempt: int, exception: Exception):
+    print(f"Retry attempt {attempt} after error: {exception}")
+    # Log to monitoring system, send alert, etc.
+
+@with_retry(on_retry=on_retry_callback)
+def monitored_operation():
+    pass
+```
+
+## Circuit Breaker Pattern
+
+The circuit breaker prevents cascading failures by "opening" after repeated failures, rejecting requests until the service recovers.
+
+### States
+
+- **CLOSED** - Normal operation, requests pass through
+- **OPEN** - Too many failures, requests are rejected immediately
+- **HALF_OPEN** - Testing if service recovered, allows one request
+
+### Basic usage
+
+```python
+from agent_sentinel import with_circuit_breaker
+
+@with_circuit_breaker(
+    failure_threshold=5,    # Open after 5 consecutive failures
+    recovery_timeout=60.0,  # Try recovery after 60 seconds
+)
+def call_unreliable_service():
+    return external_service.call()
+
+try:
+    result = call_unreliable_service()
+except AgentSentinelError as e:
+    if e.error_code == "CIRCUIT_OPEN":
+        print("Circuit breaker is open, service unavailable")
+        # Use fallback behavior
+```
+
+### Combining retry and circuit breaker
+
+```python
+from agent_sentinel import with_retry, with_circuit_breaker, RetryConfig
+
+# Apply circuit breaker first (outer), then retry (inner)
+@with_circuit_breaker(failure_threshold=10, recovery_timeout=120.0)
+@with_retry(config=RetryConfig(max_attempts=3))
+def resilient_operation():
+    # 1. Circuit breaker checks if service is available
+    # 2. If available, retry logic handles transient failures
+    # 3. If too many failures, circuit opens
+    pass
+```
+
+### Monitoring circuit breaker state
+
+```python
+@with_circuit_breaker(failure_threshold=5)
+def monitored_call():
+    pass
+
+# Access the breaker instance
+breaker = monitored_call.breaker
+
+print(f"State: {breaker.state}")  # CLOSED, OPEN, or HALF_OPEN
+print(f"Failures: {breaker.failure_count}")
+print(f"Last failure: {breaker.last_failure_time}")
+```
+
+## Backoff Strategy
+
+The retry module uses exponential backoff with jitter:
+
+```python
+# Delay calculation:
+delay = initial_delay * (exponential_base ^ attempt)
+delay = min(delay, max_delay)
+
+# With jitter (±10% randomness):
+delay = delay + random.uniform(-delay * 0.1, delay * 0.1)
+```
+
+**Example progression** (initial_delay=1.0, base=2.0):
+- Attempt 1: ~1 second
+- Attempt 2: ~2 seconds
+- Attempt 3: ~4 seconds
+- Attempt 4: ~8 seconds
+- Attempt 5: ~16 seconds
+
+## Error Types
+
+The SDK defines specific error types for retry logic:
+
+```python
+from agent_sentinel import (
+    AgentSentinelError,     # Base exception
+    NetworkError,           # Network/connectivity issues
+    TimeoutError,           # Request timeout
+    SyncError,              # Remote sync failure
+    ConfigurationError,     # Invalid configuration
+)
+
+# Default retryable exceptions: NetworkError, TimeoutError
+```
+
+## Remote Sync Resilience
+
+The background sync to the platform uses retry and circuit breaker internally:
+
+```python
+from agent_sentinel import enable_remote_sync
+
+# Remote sync automatically uses:
+# - Retry with exponential backoff (3 attempts)
+# - Circuit breaker (opens after 5 failures)
+# - Graceful degradation (continues local logging if sync fails)
+
+enable_remote_sync(
+    base_url="https://sentinel.example.com",
+    api_key="your-key",
+)
+```
+
+If remote sync fails after retries:
+- Local ledger continues working
+- Logs warning but doesn't crash your agent
+- Circuit breaker prevents repeated failed attempts
+- Automatically recovers when platform is available
+
+## Best Practices
+
+<Tip>
+**Use retry for transient failures**: Network glitches, rate limits, and temporary service outages benefit from retry logic.
+</Tip>
+
+<Tip>
+**Use circuit breaker for persistent failures**: If a service is down, the circuit breaker prevents wasting resources on repeated failed attempts.
+</Tip>
+
+<Warning>
+**Don't retry non-idempotent operations blindly**: If your operation has side effects (e.g., charging a credit card), ensure it's safe to retry or use idempotency tokens.
+</Warning>
+
+<Tip>
+**Combine with timeouts**: Set reasonable timeouts on operations to prevent hanging indefinitely during retries.
+</Tip>
+
+<Tip>
+**Monitor circuit breaker state**: Track when circuits open in production - it indicates underlying service issues that need attention.
+</Tip>
+
+## Common Patterns
+
+### API call with full resilience
+
+```python
+from agent_sentinel import with_retry, with_circuit_breaker, RetryConfig, TimeoutError
+import requests
+
+@with_circuit_breaker(failure_threshold=5, recovery_timeout=60.0)
+@with_retry(config=RetryConfig(
+    max_attempts=3,
+    initial_delay=1.0,
+    retryable_exceptions=[TimeoutError, requests.exceptions.RequestException]
+))
+def call_api(endpoint: str):
+    response = requests.get(endpoint, timeout=5.0)
+    response.raise_for_status()
+    return response.json()
+```
+
+### Database operation with retry
+
+```python
+from agent_sentinel import with_retry, RetryConfig
+import psycopg2
+
+@with_retry(config=RetryConfig(
+    max_attempts=5,
+    initial_delay=0.5,
+    retryable_exceptions=[psycopg2.OperationalError]
+))
+def query_database(query: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query)
+    return cursor.fetchall()
+```
+
+### LLM call with exponential backoff
+
+```python
+from agent_sentinel import with_retry, RetryConfig
+from openai import RateLimitError
+
+@with_retry(config=RetryConfig(
+    max_attempts=5,
+    initial_delay=1.0,
+    max_delay=32.0,
+    retryable_exceptions=[RateLimitError]
+))
+def call_llm(prompt: str):
+    return client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}]
+    )
+```
+
+## Troubleshooting
+
+### Retry not working
+
+Make sure the exception is in `retryable_exceptions`:
+
+```python
+# ✅ Correct - exception is retryable
+config = RetryConfig(retryable_exceptions=[ValueError])
+
+@with_retry(config=config)
+def may_fail():
+    raise ValueError("Transient error")
+
+# ❌ Won't retry - exception not in list
+@with_retry(config=config)
+def may_fail():
+    raise RuntimeError("Different error")
+```
+
+### Circuit breaker stuck open
+
+If the circuit is stuck open:
+1. Check if the underlying service is actually down
+2. Verify `recovery_timeout` is reasonable
+3. Ensure the service is healthy before expecting recovery
+4. Consider manual reset in emergency:
+
+```python
+# Not recommended for production, but useful for testing
+breaker.state = breaker.CLOSED
+breaker.failure_count = 0
+```
+
+### Too many retries
+
+If operations retry too many times:
+- Reduce `max_attempts`
+- Increase `initial_delay` or `max_delay`
+- Make exceptions more specific (don't retry everything)
+- Add circuit breaker to fail fast on persistent issues
+
+## See Also
+
+- [Errors](/sdk/python/errors) - Error types and handling
+- [Remote Sync](/sdk/python/remote-sync) - Background sync configuration
+- [Instrumentation](/sdk/python/instrumentation) - Wrapping operations with @guarded_action
